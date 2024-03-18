@@ -1,6 +1,7 @@
 package com.omarahmed42.user.service.impl;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.UUID;
 
 import org.keycloak.admin.client.Keycloak;
@@ -67,9 +68,9 @@ public class UserServiceImpl implements UserService {
         log.info("Response |  Status: {} | Status Info: {}", response.getStatus(), response.getStatusInfo());
 
         if (!is2xx(response.getStatus())) {
-            String output = response.readEntity(String.class);
-            log.error("Response body {}", output);
-            throw new UserCreationException("Could not create a keycloak user");
+            @SuppressWarnings("unchecked")
+            Map<String, String> error = response.readEntity(Map.class);
+            throw new UserCreationException(response.getStatus(), error.get("errorMessage"));
         }
 
         if (userRepresentation == null)
@@ -80,6 +81,7 @@ public class UserServiceImpl implements UserService {
             user = userRepository.save(user);
             log.info("Stored user in the database successfully with id {}", user.getId());
         } catch (Exception e) {
+            log.error("Error while storing user to database {} || {}", e, e.getMessage());
             keycloak.realm(realm).users().delete(userRepresentation.getId());
             throw new UserCreationException("Failed to store user to database");
         }
