@@ -1,5 +1,7 @@
 package com.omarahmed42.catalog.mapper;
 
+import java.util.List;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -15,4 +17,6 @@ public interface ProductMapper {
 
     @Mapping(target = "categoryId", source = "category.id")
     ProductResponse toProductResponse(Product product);
+
+    List<ProductResponse> toProductResponseList(List<Product> products);
 }

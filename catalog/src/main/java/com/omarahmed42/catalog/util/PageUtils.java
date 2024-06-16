@@ -4,6 +4,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort.Direction;
 
 import com.omarahmed42.catalog.dto.request.PaginationRequest;
+import com.omarahmed42.catalog.dto.request.QueryFilter;
 
 import lombok.experimental.UtilityClass;
 
@@ -17,5 +18,14 @@ public class PageUtils {
 
         return PageRequest.of(paginationRequest.page() - 1, paginationRequest.size(),
                 Direction.valueOf(paginationRequest.sortOrder().toString()));
+    }
+
+    public static PageRequest getPages(QueryFilter queryFilter) {
+        if (queryFilter.getOrder() == null) {
+            return PageRequest.of(queryFilter.getPage() - 1, queryFilter.getSize());
+        }
+
+        return PageRequest.of(queryFilter.getPage() - 1, queryFilter.getSize(),
+                Direction.valueOf(queryFilter.getOrder().toString()));
     }
 }

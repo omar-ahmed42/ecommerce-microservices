@@ -1,4 +1,4 @@
-package com.omarahmed42.catalog.exception;
+package com.omarahmed42.catalog.exception.generic;
 
 public class NotFoundException extends RuntimeException {
 
