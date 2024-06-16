@@ -1,0 +1,11 @@
+package com.omarahmed42.catalog.dto.response;
+
+import java.util.List;
+
+public record PaginationResult<T>(
+        List<T> content,
+        int numberOfElements,
+        long totalElements,
+        int totalPages,
+        int currentPageNumber) {
+}
