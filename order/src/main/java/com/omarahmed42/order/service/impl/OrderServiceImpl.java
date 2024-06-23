@@ -10,12 +10,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.omarahmed42.order.dto.request.OrderRequest;
 import com.omarahmed42.order.dto.response.OrderDetails;
 import com.omarahmed42.order.enums.OrderStatus;
-import com.omarahmed42.order.exception.InsufficientStockException;
-import com.omarahmed42.order.exception.InsufficientStockToFulfillOrderException;
-import com.omarahmed42.order.exception.InvalidInputException;
 import com.omarahmed42.order.exception.OrderNotFoundException;
 import com.omarahmed42.order.mapper.OrderMapper;
 import com.omarahmed42.order.message.payload.item.PricedItem;
@@ -24,8 +20,6 @@ import com.omarahmed42.order.model.OrderItem;
 import com.omarahmed42.order.repository.OrderRepository;
 import com.omarahmed42.order.service.OrderService;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -34,50 +28,6 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
-
-    @Override
-    public void placeOrder(@Valid OrderRequest orderRequest) {
-        if (orderRequest == null)
-            throw new InvalidInputException("Order cannot be empty");
-        if (orderRequest.productId() == null)
-            throw new InvalidInputException("Product ID cannot be empty");
-        if (orderRequest.quantity() == null)
-            throw new InvalidInputException("Quantity cannot be empty");
-        if (orderRequest.quantity() < 1)
-            throw new InvalidInputException("Quantity cannot be less than 1");
-
-        lockProductInInventory(orderRequest.productId());
-        Integer stock = findStock(orderRequest.productId());
-        if (stock <= 0) {
-            releaseLockFromProductInInventory(orderRequest.productId());
-            throw new InsufficientStockException("Not enough stock");
-        } else if (stock < orderRequest.quantity()) {
-            releaseLockFromProductInInventory(orderRequest.productId());
-            throw new InsufficientStockToFulfillOrderException("Order quantity exceeds available stock");
-        }
-
-        Order order = new Order();
-        order.setStatus(OrderStatus.PENDING);
-
-        OrderItem orderItem = new OrderItem();
-        orderItem.setOrder(order);
-        // orderItem.setCost(orderRequest.quantity() * ;
-        orderItem.setProductId(orderRequest.productId());
-
-        order = orderRepository.save(order);
-    }
-
-    private void lockProductInInventory(@NotNull(message = "Product ID cannot be empty") Long productId) {
-        throw new UnsupportedOperationException("Unimplemented method 'lockProductInInventory'");
-    }
-
-    private Integer findStock(@NotNull(message = "Product ID cannot be empty") Long productId) {
-        throw new UnsupportedOperationException("Unimplemented method 'findStock'");
-    }
-
-    private void releaseLockFromProductInInventory(@NotNull(message = "Product ID cannot be empty") Long productId) {
-        throw new UnsupportedOperationException("Unimplemented method 'releaseLockFromProductInInventory'");
-    }
 
     @Override
     @Transactional
@@ -106,8 +56,12 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(readOnly = true)
     public com.omarahmed42.order.dto.message.domain.Order getOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException("Order with id " + orderId + " not found"));
+                .orElseThrow(() -> new OrderNotFoundException(getOrderNotFoundExceptionMessage(orderId)));
         return orderMapper.toOrder(order);
+    }
+
+    private String getOrderNotFoundExceptionMessage(Long orderId) {
+        return "Order with id " + orderId + " not found";
     }
 
     @Override
@@ -115,7 +69,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderDetails updateOrderPrices(Long orderId,
             List<PricedItem> pricedItems) {
         Order order = orderRepository.findOrderAndOrderItemsById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException("Order with id " + orderId + " not found"));
+                .orElseThrow(() -> new OrderNotFoundException(getOrderNotFoundExceptionMessage(orderId)));
 
         Map<Long, OrderItem> productIdToItem = new HashMap<>();
         for (OrderItem item : order.getOrderItems()) {
@@ -142,7 +96,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderDetails completeOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException("Order with id " + orderId + " not found"));
+                .orElseThrow(() -> new OrderNotFoundException(getOrderNotFoundExceptionMessage(orderId)));
 
         order.setStatus(OrderStatus.FULFILLED);
         order = orderRepository.save(order);

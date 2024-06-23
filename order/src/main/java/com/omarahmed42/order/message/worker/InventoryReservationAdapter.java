@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.omarahmed42.order.dto.message.Message;
 import com.omarahmed42.order.message.payload.ReserveStockPayload;
 import com.omarahmed42.order.message.producer.MessageSender;
-import com.omarahmed42.order.service.OrderService;
 
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.spring.client.annotation.JobWorker;
@@ -18,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class InventoryReservationAdapter {
 
-    private final OrderService orderService;
     private final MessageSender messageSender;
     private final ObjectMapper objectMapper;
 
@@ -28,7 +26,6 @@ public class InventoryReservationAdapter {
         ReserveStockPayload payload = objectMapper.convertValue(variablesAsMap, ReserveStockPayload.class);
 
         Message<ReserveStockPayload> message = new Message<>("ReserveInventoryEvent", payload);
-        // message.setCorrelationId((String) job.getVariable("correlation_id"));
         message.setCorrelationId(payload.getCorrelationId());
         message.getMetadata().put("purchase_type", (String) job.getVariable("purchase_type"));
 

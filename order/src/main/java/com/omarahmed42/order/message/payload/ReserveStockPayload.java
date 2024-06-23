@@ -29,14 +29,6 @@ public class ReserveStockPayload implements Serializable {
         return result;
     }
 
-    // public static ReserveStockPayload fromMap(Map<String, String> values) {
-    // ReserveStockPayload payload = new ReserveStockPayload();
-    // payload.setOrderId(Long.parseLong(values.get("orderId")));
-    // payload.setReason(values.get("reason"));
-    // payload.setI
-    // return payload;
-    // }
-
     public void addItem(Item item) {
         this.items.add(item);
     }
