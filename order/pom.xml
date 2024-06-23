@@ -135,8 +135,8 @@
 			<version>3.21.12</version>
 		</dependency>
  
-		<!-- https://mvnrepository.com/artifact/com.google.protobuf/protoc
-		<dependency>
+		<!-- https://mvnrepository.com/artifact/com.google.protobuf/protoc -->
+		<!-- <dependency>
 			<groupId>com.google.protobuf</groupId>
 			<artifactId>protoc</artifactId>
 			<version>21.0-rc-1</version>

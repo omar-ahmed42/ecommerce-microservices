@@ -3,8 +3,8 @@ package com.omarahmed42.order.service.impl;
 import org.springframework.stereotype.Service;
 
 import com.google.protobuf.Int64Value;
-import com.omarahmed42.catalog.client.grpc.UIDGrpc;
-import com.omarahmed42.catalog.client.grpc.Uid;
+import com.omarahmed42.order.client.grpc.UIDGrpc;
+import com.omarahmed42.order.client.grpc.Uid;
 import com.omarahmed42.order.exception.InvalidIdException;
 import com.omarahmed42.order.service.IdGeneratorService;
 
