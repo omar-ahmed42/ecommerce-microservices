@@ -34,18 +34,18 @@ public class MessageListener {
     @KafkaListener(id = "order", topics = MessageSender.TOPIC)
     public void consume(String payload, @Header String messageType) throws Exception {
         if ("OrderPlacedEvent".equals(messageType)) {
-            placeOrder(objectMapper.readValue(messageType, new TypeReference<Message<Order>>() {
+            placeOrder(objectMapper.readValue(payload, new TypeReference<Message<Order>>() {
             }));
         } else if ("StockReservedEvent".equals(messageType)) {
             retrieveProductsPrices(
-                    objectMapper.readValue(messageType, new TypeReference<Message<ReserveStockPayload>>() {
+                    objectMapper.readValue(payload, new TypeReference<Message<ReserveStockPayload>>() {
                     }));
         } else if ("PricedProductsRetrievedEvent".equals(messageType)) {
             updateOrderCost(
-                    objectMapper.readValue(messageType, new TypeReference<Message<RetrievePricedItemsPayload>>() {
+                    objectMapper.readValue(payload, new TypeReference<Message<RetrievePricedItemsPayload>>() {
                     }));
         } else if ("PaymentRetrievedEvent".equals(messageType)) {
-            completeOrder(objectMapper.readValue(messageType, new TypeReference<Message<RetrievePaymentPayload>>() {
+            completeOrder(objectMapper.readValue(payload, new TypeReference<Message<RetrievePaymentPayload>>() {
             }));
         }
     }
