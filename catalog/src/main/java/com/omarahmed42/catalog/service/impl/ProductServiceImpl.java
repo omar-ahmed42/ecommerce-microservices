@@ -1,11 +1,14 @@
 package com.omarahmed42.catalog.service.impl;
 
+import java.util.UUID;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.omarahmed42.catalog.dto.message.Message;
 import com.omarahmed42.catalog.dto.request.ProductCreation;
 import com.omarahmed42.catalog.dto.request.QueryFilter;
 import com.omarahmed42.catalog.dto.response.PaginationResult;
@@ -13,6 +16,8 @@ import com.omarahmed42.catalog.dto.response.ProductResponse;
 import com.omarahmed42.catalog.exception.InvalidInputException;
 import com.omarahmed42.catalog.exception.ProductNotFoundException;
 import com.omarahmed42.catalog.mapper.ProductMapper;
+import com.omarahmed42.catalog.message.payload.ProductCreatedPayload;
+import com.omarahmed42.catalog.message.producer.MessageSender;
 import com.omarahmed42.catalog.model.Product;
 import com.omarahmed42.catalog.repository.ProductRepository;
 import com.omarahmed42.catalog.service.ProductService;
@@ -28,6 +33,7 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
+    private final MessageSender messageSender;
 
     @Override
     @Transactional
@@ -36,7 +42,18 @@ public class ProductServiceImpl implements ProductService {
         product.setSellerId(SecurityUtils.getAuthenticatedUserId());
         product = productRepository.save(product);
 
+        emitProductCreatedEvent(product);
         return productMapper.toProductResponse(product);
+    }
+
+    private void emitProductCreatedEvent(Product product) {
+        ProductCreatedPayload payload = new ProductCreatedPayload();
+        payload.setProductId(product.getId());
+        payload.setStock(0);
+        payload.setCorrelationId(UUID.randomUUID().toString());
+
+        Message<ProductCreatedPayload> message = new Message<>("ProductCreatedEvent", payload);
+        messageSender.send(message);
     }
 
     @Override
