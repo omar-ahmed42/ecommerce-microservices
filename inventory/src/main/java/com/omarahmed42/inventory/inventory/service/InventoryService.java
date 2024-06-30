@@ -8,6 +8,8 @@ import com.omarahmed42.inventory.inventory.dto.request.InventoryRequest;
 import com.omarahmed42.inventory.inventory.dto.response.InventoryResponse;
 
 public interface InventoryService {
+    InventoryResponse addInventoryItem(InventoryRequest inventoryRequest);
+
     void reserveInventory(List<InventoryItem> items) throws JsonProcessingException;
 
     InventoryResponse reserveInventory(InventoryRequest inventoryRequest);

@@ -8,6 +8,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.omarahmed42.inventory.inventory.dto.message.Message;
+import com.omarahmed42.inventory.inventory.dto.request.InventoryRequest;
+import com.omarahmed42.inventory.inventory.message.payload.ProductCreatedPayload;
 import com.omarahmed42.inventory.inventory.message.payload.ReserveStockPayload;
 import com.omarahmed42.inventory.inventory.message.producer.MessageSender;
 import com.omarahmed42.inventory.inventory.service.InventoryService;
@@ -27,6 +29,9 @@ public class MessageListener {
         if ("ReserveInventoryEvent".equals(messageType)) {
             reserveStock(objectMapper.readValue(payload, new TypeReference<Message<ReserveStockPayload>>() {
             }));
+        } else if ("ProductCreatedEvent".equals(messageType)) {
+            createdInventoryItem(objectMapper.readValue(payload, new TypeReference<Message<ProductCreatedPayload>>() {
+            }));
         }
     }
 
@@ -38,9 +43,16 @@ public class MessageListener {
         sendingPayload.setOrderId(receivedPayload.getOrderId());
         sendingPayload.setCorrelationId(message.getCorrelationId());
 
-        Message<ReserveStockPayload> sendingMessage = new Message<ReserveStockPayload>("StockReservedEvent",
+        Message<ReserveStockPayload> sendingMessage = new Message<>("StockReservedEvent",
                 sendingPayload);
 
         messageSender.send(sendingMessage);
+    }
+
+    private void createdInventoryItem(Message<ProductCreatedPayload> message) {
+        ProductCreatedPayload receivedPayload = message.getPayload();
+        inventoryService
+                .addInventoryItem(new InventoryRequest(receivedPayload.getProductId(), receivedPayload.getStock()));
+
     }
 }

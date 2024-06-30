@@ -41,6 +41,17 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional
+    public InventoryResponse addInventoryItem(InventoryRequest inventoryRequest) {
+        Inventory inventory = inventoryMapper.toEntity(inventoryRequest);
+        if (inventory.getStock() == null || inventory.getStock() < 0)
+            inventory.setStock(0);
+        inventory = inventoryRepository.save(inventory);
+
+        return inventoryMapper.toInventoryResponse(inventory);
+    }
+
+    @Override
+    @Transactional
     public void deleteInventory(@NotNull(message = "Product ID cannot be empty") Long productId) {
         log.info("Deleting inventory for product with id {}", productId);
         inventoryRepository.deleteById(productId);
