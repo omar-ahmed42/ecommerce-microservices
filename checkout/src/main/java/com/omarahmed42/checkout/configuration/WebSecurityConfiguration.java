@@ -50,7 +50,6 @@ public class WebSecurityConfiguration {
 
     @Bean
     JwtDecoder jwtDecoder() {
-        // return JwtDecoders.fromIssuerLocation(tokenIssuerUrl);
         return NimbusJwtDecoder.withJwkSetUri(this.jwkSetUri).build();
     }
 

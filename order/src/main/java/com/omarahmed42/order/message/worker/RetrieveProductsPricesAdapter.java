@@ -25,13 +25,11 @@ public class RetrieveProductsPricesAdapter {
     private final ObjectMapper objectMapper;
 
     @JobWorker(autoComplete = true, type = "retrieve-products-prices")
-    public Map<String, String> handle(ActivatedJob job) throws JsonMappingException, JsonProcessingException {
+    public Map<String, String> handle(ActivatedJob job) throws JsonProcessingException {
         log.info("In retrieve-products-prices");
         Map<String, Object> variablesAsMap = job.getVariablesAsMap();
         log.info("RetrieveProductsPricesAdapter variablesAsMap {}", variablesAsMap.toString());
 
-        // RetrievePricedItemsPayload payload =
-        // objectMapper.convertValue(variablesAsMap,
         RetrievePricedItemsPayload payload = objectMapper.readValue(job.getVariables(),
                 RetrievePricedItemsPayload.class);
 

@@ -46,45 +46,6 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.setupIntent());
     }
 
-    // @PostMapping("/payment-webhook")
-    // public ResponseEntity<String> receiveStripePayment(@RequestHeader(name = "Stripe-Signature") String sigHeader,
-    //         @RequestBody String payload) {
-
-    //     Event event;
-    //     if (endpointSecret != null && sigHeader != null) {
-    //         // Only verify the event if you have an endpoint secret defined.
-    //         // Otherwise, use the basic event deserialized with GSON.
-    //         try {
-    //             event = Webhook.constructEvent(
-    //                     payload, sigHeader, endpointSecret);
-    //         } catch (JsonSyntaxException e) {
-    //             // Invalid payload
-    //             log.error("⚠️  Webhook error while parsing basic request.");
-    //             return ResponseEntity.badRequest().build();
-    //         } catch (SignatureVerificationException e) {
-    //             // Invalid signature
-    //             log.error("⚠️  Webhook error while validating signature.");
-    //             return ResponseEntity.badRequest().build();
-    //         }
-    //         // Deserialize the nested object inside the event
-    //         EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
-    //         StripeObject stripeObject;
-    //         if (dataObjectDeserializer.getObject().isPresent()) {
-    //             stripeObject = dataObjectDeserializer.getObject().get();
-    //         } else {
-    //             // Deserialization failed, probably due to an API version mismatch.
-    //             // Refer to the Javadoc documentation on `EventDataObjectDeserializer` for
-    //             // instructions on how to handle this case, or return an error here.
-    //             log.error("Unable to deserialize event data object for {}", event);
-    //             return ResponseEntity.badRequest().build();
-    //         }
-    //         // Handle the event
-    //         paymentService.handlePaymentIntent(event.getType(), (PaymentIntent) stripeObject);
-    //         return ResponseEntity.ok().build();
-    //     }
-    //     return ResponseEntity.badRequest().build();
-    // }
-    
     @PostMapping("/payment-webhook")
     public ResponseEntity<String> listenToStripeEvents(@RequestHeader(name = "Stripe-Signature") String sigHeader,
             @RequestBody String payload) {
@@ -119,7 +80,6 @@ public class PaymentController {
             }
             // Handle the event
             paymentService.handleEvent(event.getType(), stripeObject);
-            // paymentService.handlePaymentIntent(event.getType(), (PaymentIntent) stripeObject);
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.badRequest().build();

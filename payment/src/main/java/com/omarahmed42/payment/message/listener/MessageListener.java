@@ -41,11 +41,5 @@ public class MessageListener {
                 .variables(messagePayload.asMap())
                 .send()
                 .join();
-
-        // PaymentResponse payment = paymentService.getPayment(paymentId);
-        // if (!messagePayload.getUserId().equals(payment.getUserId())) {
-        // // TODO: Throw unauthorized exception
-        // }
-
     }
 }

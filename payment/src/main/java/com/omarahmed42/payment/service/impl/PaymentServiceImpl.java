@@ -199,7 +199,6 @@ public class PaymentServiceImpl implements PaymentService {
 
             payment = paymentRepository.save(payment);
             log.debug("Payment id {}", payment.getId().toString());
-            // return payment.getId();
         } catch (StripeException e) {
             log.error("Stripe exception {}", e);
         }
@@ -222,8 +221,6 @@ public class PaymentServiceImpl implements PaymentService {
         SetupIntentCreateParams params = SetupIntentCreateParams.builder()
                 .setCustomer(gatewayCustomer.getCustomerId())
                 .addPaymentMethodType("card")
-                // .setAutomaticPaymentMethods(
-                // SetupIntentCreateParams.AutomaticPaymentMethods.builder().setEnabled(true).build())
                 .setUsage(Usage.OFF_SESSION)
                 .build();
 

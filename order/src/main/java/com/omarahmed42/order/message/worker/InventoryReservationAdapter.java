@@ -27,15 +27,11 @@ public class InventoryReservationAdapter {
     public Map<String, String> handle(ActivatedJob job) throws JsonProcessingException {
         Map<String, Object> variablesAsMap = job.getVariablesAsMap();
         log.info("InventoryReservationAdapter variablesAsMap {}", variablesAsMap.toString());
-        // ReserveStockPayload payload = objectMapper.convertValue(variablesAsMap,
-        // ReserveStockPayload.class);
         ReserveStockPayload payload = ReserveStockPayload.fromMap(variablesAsMap, objectMapper);
         log.debug("Payload converted successfully");
 
         Message<ReserveStockPayload> message = new Message<>("ReserveInventoryEvent", payload);
         message.setCorrelationId(payload.getCorrelationId());
-        // message.getMetadata().put("purchase_type", (String) job.getVariable("purchase_type"));
-
         messageSender.send(message);
         return Map.of("ReserveStock_correlation_id", message.getCorrelationId());
     }
