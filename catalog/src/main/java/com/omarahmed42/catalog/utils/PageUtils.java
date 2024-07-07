@@ -1,10 +1,12 @@
-package com.omarahmed42.catalog.util;
+package com.omarahmed42.catalog.utils;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 
 import com.omarahmed42.catalog.dto.request.PaginationRequest;
 import com.omarahmed42.catalog.dto.request.QueryFilter;
+import com.omarahmed42.catalog.model.Category_;
 
 import lombok.experimental.UtilityClass;
 
@@ -17,7 +19,8 @@ public class PageUtils {
         }
 
         return PageRequest.of(paginationRequest.page() - 1, paginationRequest.size(),
-                Direction.valueOf(paginationRequest.sortOrder().toString()));
+                Sort.by(
+                        Direction.valueOf(paginationRequest.sortOrder().toString()), Category_.ID));
     }
 
     public static PageRequest getPages(QueryFilter queryFilter) {
@@ -26,6 +29,7 @@ public class PageUtils {
         }
 
         return PageRequest.of(queryFilter.getPage() - 1, queryFilter.getSize(),
-                Direction.valueOf(queryFilter.getOrder().toString()));
+                Sort.by(
+                        Direction.valueOf(queryFilter.getOrder().toString()), Category_.ID));
     }
 }
