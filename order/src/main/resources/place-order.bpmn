@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_00wrl9p" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.24.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.5.0">
-  <bpmn:process id="place-order" isExecutable="true">
+  <bpmn:process id="place-order" name="Place order" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="Order Placed">
       <bpmn:documentation>Stores the order and starts Camunda command</bpmn:documentation>
       <bpmn:outgoing>Flow_1gk3vpi</bpmn:outgoing>
@@ -13,13 +13,13 @@
       <bpmn:incoming>Flow_1gk3vpi</bpmn:incoming>
       <bpmn:outgoing>Flow_141ogry</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_141ogry" sourceRef="Activity_1egih64" targetRef="Event_0xba20d" />
-    <bpmn:intermediateCatchEvent id="Event_0xba20d" name="Stock Reserved">
+    <bpmn:sequenceFlow id="Flow_141ogry" sourceRef="Activity_1egih64" targetRef="StockReservedEvent" />
+    <bpmn:intermediateCatchEvent id="StockReservedEvent" name="Stock Reserved">
       <bpmn:incoming>Flow_141ogry</bpmn:incoming>
       <bpmn:outgoing>Flow_0t6n3k9</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_09vovbi" messageRef="Message_2s7355b" />
     </bpmn:intermediateCatchEvent>
-    <bpmn:sequenceFlow id="Flow_0t6n3k9" sourceRef="Event_0xba20d" targetRef="Activity_0y05ing" />
+    <bpmn:sequenceFlow id="Flow_0t6n3k9" sourceRef="StockReservedEvent" targetRef="Activity_0y05ing" />
     <bpmn:serviceTask id="Activity_0y05ing" name="Retrieve products prices (id, price)">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="retrieve-products-prices" />
@@ -80,12 +80,12 @@
   </bpmn:process>
   <bpmn:message id="Message_2s7355b" name="StockReservedEvent">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=correlation_id" />
+      <zeebe:subscription correlationKey="=ReserveStock_correlation_id" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_3qonlq5" name="PricedProductsRetrievedEvent">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=correlation_id" />
+      <zeebe:subscription correlationKey="=RetrieveProductsPrices_correlation_id" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_1eect9l" name="PrepareOrderPaymentEvent">
@@ -110,10 +110,10 @@
         <dc:Bounds x="270" y="77" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0w9393y_di" bpmnElement="Event_0xba20d">
+      <bpmndi:BPMNShape id="Event_0w9393y_di" bpmnElement="StockReservedEvent">
         <dc:Bounds x="432" y="99" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="411" y="142" width="78" height="14" />
+          <dc:Bounds x="412" y="142" width="78" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0stmyq8_di" bpmnElement="Activity_0y05ing">
