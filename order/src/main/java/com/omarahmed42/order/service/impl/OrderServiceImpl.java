@@ -21,8 +21,10 @@ import com.omarahmed42.order.repository.OrderRepository;
 import com.omarahmed42.order.service.OrderService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
@@ -33,6 +35,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public com.omarahmed42.order.dto.message.domain.Order placeOrder(
             com.omarahmed42.order.dto.message.domain.Order order) {
+        log.info("Placing order");
         Order orderEntity = new Order();
         orderEntity.setBillingAddressId(order.getBillingAddressId());
         orderEntity.setShippingAddressId(order.getShippingAddressId());
@@ -49,6 +52,7 @@ public class OrderServiceImpl implements OrderService {
 
         orderEntity.addItems(orderItems);
         orderEntity = orderRepository.save(orderEntity);
+        log.info("Order stored successfully");
         return orderMapper.toOrder(orderEntity);
     }
 
