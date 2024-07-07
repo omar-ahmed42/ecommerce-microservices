@@ -2,6 +2,7 @@ package com.omarahmed42.inventory.inventory.message.listener;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -15,8 +16,10 @@ import com.omarahmed42.inventory.inventory.message.producer.MessageSender;
 import com.omarahmed42.inventory.inventory.service.InventoryService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class MessageListener {
 
@@ -25,7 +28,11 @@ public class MessageListener {
     private final InventoryService inventoryService;
 
     @KafkaListener(id = "inventory", topics = MessageSender.TOPIC)
-    public void consume(String payload, @Header String messageType) throws Exception {
+    public void consume(@Payload String payload, @Header(name = "type", required = false) String messageType)
+            throws Exception {
+        if (messageType == null)
+            return;
+        log.info("Consuming message with of type {} with payload {}", messageType, payload);
         if ("ReserveInventoryEvent".equals(messageType)) {
             reserveStock(objectMapper.readValue(payload, new TypeReference<Message<ReserveStockPayload>>() {
             }));
@@ -36,6 +43,8 @@ public class MessageListener {
     }
 
     private void reserveStock(Message<ReserveStockPayload> message) throws JsonProcessingException {
+        log.info("Reserving stock for message with correlation id {} and of type {}", message.getCorrelationId(),
+                message.getType());
         ReserveStockPayload receivedPayload = message.getPayload();
         inventoryService.reserveInventory(receivedPayload.getItems());
 
@@ -45,8 +54,12 @@ public class MessageListener {
 
         Message<ReserveStockPayload> sendingMessage = new Message<>("StockReservedEvent",
                 sendingPayload);
+        sendingMessage.setCorrelationId(message.getCorrelationId());
 
+        log.info("Publishing message with payload {}", objectMapper.writeValueAsString(sendingMessage));
         messageSender.send(sendingMessage);
+        log.info("Message published with id {} and correlation id {}", sendingMessage.getId(),
+                sendingMessage.getCorrelationId());
     }
 
     private void createdInventoryItem(Message<ProductCreatedPayload> message) {
