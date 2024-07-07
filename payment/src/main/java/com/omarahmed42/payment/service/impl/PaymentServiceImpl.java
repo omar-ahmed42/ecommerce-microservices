@@ -12,6 +12,7 @@ import com.omarahmed42.payment.dto.message.Message;
 import com.omarahmed42.payment.dto.request.PaymentCardRequest;
 import com.omarahmed42.payment.dto.request.PaymentRequest;
 import com.omarahmed42.payment.dto.response.PaymentResponse;
+import com.omarahmed42.payment.dto.response.SetupIntentResponse;
 import com.omarahmed42.payment.enums.PaymentGatewayType;
 import com.omarahmed42.payment.exception.PaymentNotFoundException;
 import com.omarahmed42.payment.exception.PaymentOrderNotFoundException;
@@ -25,15 +26,22 @@ import com.omarahmed42.payment.model.PaymentOrder;
 import com.omarahmed42.payment.repository.PaymentGatewayCustomerRepository;
 import com.omarahmed42.payment.repository.PaymentOrderRepository;
 import com.omarahmed42.payment.repository.PaymentRepository;
+import com.omarahmed42.payment.service.PaymentGatewayCustomerService;
 import com.omarahmed42.payment.service.PaymentService;
 import com.omarahmed42.payment.utils.SecurityUtils;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.PaymentMethod;
+import com.stripe.model.PaymentMethod.Card;
+import com.stripe.model.SetupIntent;
+import com.stripe.model.StripeObject;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.PaymentIntentCreateParams;
+import com.stripe.param.PaymentMethodAttachParams;
 import com.stripe.param.PaymentMethodCreateParams;
+import com.stripe.param.SetupIntentCreateParams;
+import com.stripe.param.SetupIntentCreateParams.Usage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +56,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentGatewayCustomerRepository paymentGatewayCustomerRepository;
     private final PaymentMapper paymentMapper;
     private final MessageSender messageSender;
+    private final PaymentGatewayCustomerService paymentGatewayCustomerService;
 
     @Override
     @Transactional(readOnly = true)
@@ -156,7 +165,9 @@ public class PaymentServiceImpl implements PaymentService {
             PaymentGatewayCustomer paymentGatewayCustomer = null;
             if (maybeGatewayCustomer.isEmpty()) {
                 Customer customer = Customer
-                        .create(CustomerCreateParams.builder().setMetadata(Map.of("userId", userId)).build());
+                        .create(CustomerCreateParams.builder()
+                                .setName(userId)
+                                .setMetadata(Map.of("userId", userId)).build());
 
                 paymentGatewayCustomer = new PaymentGatewayCustomer();
                 paymentGatewayCustomer.setType(PaymentGatewayType.STRIPE);
@@ -171,10 +182,13 @@ public class PaymentServiceImpl implements PaymentService {
                     .builder()
                     .setType(PaymentMethodCreateParams.Type.CARD)
                     .setCard(buildCardDetails(paymentRequest))
-                    .setCustomer(paymentGatewayCustomer.getCustomerId())
                     .build();
 
             PaymentMethod paymentMethod = PaymentMethod.create(params);
+            PaymentMethodAttachParams paymentMethodAttachParams = PaymentMethodAttachParams.builder()
+                    .setCustomer(paymentGatewayCustomer.getCustomerId()).build();
+            paymentMethod = paymentMethod.attach(paymentMethodAttachParams);
+
             Payment payment = new Payment();
             payment.setCardId(paymentMethod.getId());
             payment.setUserId(userId);
@@ -183,7 +197,8 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setExpYear(paymentRequest.expYear().intValue());
             payment.setExpMonth(paymentRequest.expMonth().shortValue());
 
-            paymentRepository.save(payment);
+            payment = paymentRepository.save(payment);
+            log.debug("Payment id {}", payment.getId().toString());
             // return payment.getId();
         } catch (StripeException e) {
             log.error("Stripe exception {}", e);
@@ -198,6 +213,61 @@ public class PaymentServiceImpl implements PaymentService {
                 .setExpMonth(payment.expMonth())
                 .setCvc(payment.cvc())
                 .build();
+    }
+
+    @Override
+    public SetupIntentResponse setupIntent() throws StripeException {
+        String userId = SecurityUtils.getSubject();
+        PaymentGatewayCustomer gatewayCustomer = paymentGatewayCustomerService.getOrAddPaymentGatewayCustomer(userId);
+        SetupIntentCreateParams params = SetupIntentCreateParams.builder()
+                .setCustomer(gatewayCustomer.getCustomerId())
+                .addPaymentMethodType("card")
+                // .setAutomaticPaymentMethods(
+                // SetupIntentCreateParams.AutomaticPaymentMethods.builder().setEnabled(true).build())
+                .setUsage(Usage.OFF_SESSION)
+                .build();
+
+        SetupIntent setupIntent = SetupIntent.create(params);
+        return new SetupIntentResponse(setupIntent.getClientSecret());
+    }
+
+    @Override
+    public void handleEvent(String eventType, StripeObject stripeObject) {
+        switch (eventType) {
+            case "payment_method.attached":
+                log.info("Payment method with id {} attached for customer with id {}",
+                        ((PaymentMethod) stripeObject).getId(), ((PaymentMethod) stripeObject).getCustomer());
+                handlePaymentMethodAttached((PaymentMethod) stripeObject);
+                break;
+            case "payment_intent.succeeded":
+                log.info("Payment for {} succeeded.", ((PaymentIntent) stripeObject).getAmount());
+                handlePaymentIntentSucceeded((PaymentIntent) stripeObject);
+                break;
+            case "payment_intent.payment_failed":
+                log.info("Payment for {} failed.", ((PaymentIntent) stripeObject).getId());
+                handlePaymentIntentFailed((PaymentIntent) stripeObject);
+                break;
+            default:
+                log.warn("Unhandled event type: {}", eventType);
+                break;
+        }
+    }
+
+    private void handlePaymentMethodAttached(PaymentMethod paymentMethod) {
+        Card card = paymentMethod.getCard();
+        PaymentGatewayCustomer gatewayCustomer = paymentGatewayCustomerService
+                .getByCustomerId(paymentMethod.getCustomer()).orElseThrow();
+        String userId = gatewayCustomer.getUserId();
+
+        Payment payment = new Payment();
+        payment.setCardId(paymentMethod.getId());
+        payment.setUserId(userId);
+        payment.setGatewayCustomer(gatewayCustomer);
+
+        payment.setLast4(paymentMethod.getCard().getLast4());
+        payment.setExpYear(card.getExpYear().intValue());
+        payment.setExpMonth(card.getExpMonth().shortValue());
+        paymentRepository.save(payment);
     }
 
 }
