@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoders;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.DelegatingJwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
@@ -20,11 +21,14 @@ import com.omarahmed42.checkout.converter.KeycloakJwtRolesConverter;
 @EnableWebSecurity
 public class WebSecurityConfiguration {
 
-    @Value("${keycloak.client-id}")
+    @Value("${spring.security.oauth2.client.registration.keycloak.client-id}")
     private String kcClientId;
 
-    @Value("${keycloak.issuer-url}")
+    @Value("${spring.security.oauth2.client.provider.keycloak.issuer-uri}")
     private String tokenIssuerUrl;
+
+    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
+    private String jwkSetUri;
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -46,7 +50,8 @@ public class WebSecurityConfiguration {
 
     @Bean
     JwtDecoder jwtDecoder() {
-        return JwtDecoders.fromIssuerLocation(tokenIssuerUrl);
+        // return JwtDecoders.fromIssuerLocation(tokenIssuerUrl);
+        return NimbusJwtDecoder.withJwkSetUri(this.jwkSetUri).build();
     }
 
     @Bean
