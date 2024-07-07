@@ -8,6 +8,7 @@ import org.mapstruct.ReportingPolicy;
 
 import com.omarahmed42.catalog.dto.request.ProductCreation;
 import com.omarahmed42.catalog.dto.response.ProductResponse;
+import com.omarahmed42.catalog.message.payload.item.PricedItem;
 import com.omarahmed42.catalog.model.Product;
 
 @Mapper(componentModel = "spring", unmappedSourcePolicy = ReportingPolicy.IGNORE, unmappedTargetPolicy = ReportingPolicy.IGNORE)
@@ -19,4 +20,9 @@ public interface ProductMapper {
     ProductResponse toProductResponse(Product product);
 
     List<ProductResponse> toProductResponseList(List<Product> products);
+
+    @Mapping(target = "productId", source = "id")
+    PricedItem toPricedItem(Product product);
+
+    List<PricedItem> toPricedItemList(List<Product> products);
 }

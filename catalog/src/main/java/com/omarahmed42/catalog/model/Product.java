@@ -38,7 +38,7 @@ public class Product implements Serializable {
     private BigDecimal price;
 
     @Column(name = "seller_id", nullable = false)
-    private Long sellerId;
+    private String sellerId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
