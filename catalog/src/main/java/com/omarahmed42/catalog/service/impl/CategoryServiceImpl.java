@@ -13,7 +13,7 @@ import com.omarahmed42.catalog.mapper.CategoryMapper;
 import com.omarahmed42.catalog.model.Category;
 import com.omarahmed42.catalog.repository.CategoryRepository;
 import com.omarahmed42.catalog.service.CategoryService;
-import com.omarahmed42.catalog.util.PageUtils;
+import com.omarahmed42.catalog.utils.PageUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +31,7 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponse addCategory(CategoryCreation categoryCreation) {
         log.info("Creating a new category");
         Category category = categoryMapper.toEntity(categoryCreation);
+        if (categoryCreation.parentCategoryId() == null) category.setParentCategory(null);
         category = categoryRepository.save(category);
         log.info("Category created successfully");
         return categoryMapper.toCategoryResponse(category);
@@ -42,6 +43,7 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(CategoryNotFoundException::new);
         categoryMapper.toTargetEntity(category, categoryCreation);
+        if (categoryCreation.parentCategoryId() == null) category.setParentCategory(null);
         category = categoryRepository.save(category);
         return categoryMapper.toCategoryResponse(category);
     }
