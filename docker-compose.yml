@@ -1,0 +1,650 @@
+version: '2'
+services:
+  uid-generator:
+    container_name: uid_generator
+    build: https://github.com/omar-ahmed42/distributed-uid-snowflake.git#grpc
+    image: uid_generator:latest
+    ports:
+      - '$UID_GENERATOR_PORT:$UID_GENERATOR_PORT'
+    environment:
+      - PORT=$UID_GENERATOR_PORT
+    networks:
+      - ecommerce
+
+  catalog:
+    container_name: catalog
+    build:
+      context: ./catalog
+      dockerfile: ./docker/Dockerfile
+    image: ecommerce_catalog:latest
+    ports:
+      - '$APP_HOST_CATALOG_PORT:$APP_CONTAINER_CATALOG_PORT'
+    environment:
+      - PORT=$APP_CONTAINER_CATALOG_PORT
+      - CATALOG_PG_USER
+      - CATALOG_PG_PASSWORD
+      - CONTAINER_CATALOG_PG_PORT
+      - CATALOG_DATABASE
+      - UID_GENERATOR_HOST
+      - UID_GENERATOR_PORT
+      - AUTH_PORT=${AUTH_CONTAINER_PORT}
+      - KEYCLOAK_REALM
+      - KEYCLOAK_ADMIN
+      - KEYCLOAK_ADMIN_PASSWORD
+      - KEYCLOAK_CLIENT_SECRET
+      - KEYCLOAK_CLIENT_ID
+      - KEYCLOAK_PROVIDER
+      - ZEEBE_GATEWAY_PORT=${CONTAINER_ZEEBE_GATEWAY_PORT}
+      - ZEEBE_OPERATE_PORT=${CONTAINER_ZEEBE_OPERATE_PORT}
+      - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
+      - KAFKA_BOOTSTRAP_SERVERS
+    networks:
+      - ecommerce
+      - ecommerce-catalog
+      - ecommerce-zeebe
+    restart: on-failure
+    depends_on:
+      auth-server:
+        condition: service_healthy
+      uid-generator:
+        condition: service_started
+      catalog-postgres:
+        condition: service_healthy
+      zeebe:
+        condition: service_healthy
+
+  catalog-postgres:
+    container_name: catalog-postgres
+    image: 'postgres:latest'
+    environment:
+      - POSTGRES_DB=${CATALOG_DATABASE}
+      - POSTGRES_USER=${CATALOG_PG_USER}
+      - PGPORT:${CONTAINER_CATALOG_PG_PORT}
+      - PGUSER=${CATALOG_PG_USER}
+      - POSTGRES_PASSWORD=${CATALOG_PG_PASSWORD}
+    ports:
+      - '${HOST_CATALOG_PG_PORT}:${CONTAINER_CATALOG_PG_PORT}'
+    command: ['-p', $CONTAINER_CATALOG_PG_PORT]
+    volumes:
+      - ./pgdata/catalog:/var/lib/postgresql/data
+    networks:
+      - ecommerce-catalog
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'sh',
+          '-c',
+          'pg_isready',
+          '-U',
+          '$${POSTGRES_USER}',
+          '-d',
+          '$${POSTGRES_DB}',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 160s
+
+  user-postgres:
+    container_name: user-postgres
+    image: 'postgres:latest'
+    environment:
+      - POSTGRES_DB=${USER_DATABASE}
+      - POSTGRES_USER=${USER_PG_USER}
+      - PGPORT:${CONTAINER_USER_PG_PORT}
+      - PGUSER=${USER_PG_USER}
+      - POSTGRES_PASSWORD=${USER_PG_PASSWORD}
+    ports:
+      - '${HOST_USER_PG_PORT}:${CONTAINER_USER_PG_PORT}'
+    command: ['-p', $CONTAINER_USER_PG_PORT]
+    volumes:
+      - ./pgdata/user:/var/lib/postgresql/data
+    networks:
+      - ecommerce-user
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'sh',
+          '-c',
+          'pg_isready',
+          '-U',
+          '$${POSTGRES_USER}',
+          '-d',
+          '$${POSTGRES_DB}',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 160s
+
+  user:
+    container_name: user
+    build:
+      context: ./user
+      dockerfile: ./docker/Dockerfile
+    image: ecommerce_user:latest
+    ports:
+      - '$APP_HOST_USER_PORT:$APP_CONTAINER_USER_PORT'
+    environment:
+      - PORT=$APP_CONTAINER_USER_PORT
+      - USER_PG_USER
+      - USER_PG_PASSWORD
+      - CONTAINER_USER_PG_PORT
+      - USER_DATABASE
+      - AUTH_PORT=${AUTH_CONTAINER_PORT}
+      - KEYCLOAK_REALM
+      - KEYCLOAK_ADMIN
+      - KEYCLOAK_ADMIN_PASSWORD
+      - KEYCLOAK_CLIENT_SECRET
+      - KEYCLOAK_CLIENT_ID
+      - KEYCLOAK_PROVIDER
+      - ZEEBE_GATEWAY_PORT=${CONTAINER_ZEEBE_GATEWAY_PORT}
+      - ZEEBE_OPERATE_PORT=${CONTAINER_ZEEBE_OPERATE_PORT}
+      - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
+      - KAFKA_BOOTSTRAP_SERVERS
+    networks:
+      - ecommerce
+      - ecommerce-user
+      - ecommerce-zeebe
+    restart: on-failure
+    depends_on:
+      auth-server:
+        condition: service_healthy
+      user-postgres:
+        condition: service_healthy
+      zeebe:
+        condition: service_healthy
+
+  auth-server:
+    container_name: keycloak_ecommerce
+    image: 'quay.io/keycloak/keycloak:23.0.7'
+    command:
+      - 'start-dev'
+      - '--import-realm'
+    environment:
+      - KEYCLOAK_IMPORT=/opt/keycloak/data/import/ecommerce-realm.json
+      - KEYCLOAK_ADMIN
+      - KEYCLOAK_ADMIN_PASSWORD
+      - KC_HTTP_PORT=$AUTH_CONTAINER_PORT
+      - KC_HEALTH_ENABLED=true
+      - KC_METRICS_ENABLED=true
+      - KC_DB=$AUTH_DATABASE_VENDOR
+      - KC_DB_URL=$AUTH_DATABASE_URL
+      - KC_DB_USERNAME=$AUTH_PG_USER
+      - KC_DB_PASSWORD=$AUTH_PG_PASSWORD
+      - KC_TRANSACTION_XA_ENABLED=false
+    volumes:
+      - ./keycloak/ecommerce-realm.json:/opt/keycloak/data/import/ecommerce-realm.json
+    ports:
+      - '$AUTH_HOST_PORT:$AUTH_CONTAINER_PORT'
+    networks:
+      - ecommerce
+      - ecommerce-auth
+    restart: on-failure
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          "exec 3<>/dev/tcp/127.0.0.1/$${KC_HTTP_PORT};echo -e \"GET /health/ready HTTP/1.1\r\nhost: http://localhost\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      auth-postgres:
+        condition: service_healthy
+
+  auth-postgres:
+    container_name: auth-postgres
+    image: 'postgres:latest'
+    environment:
+      - POSTGRES_DB=${AUTH_DATABASE}
+      - POSTGRES_USER=${AUTH_PG_USER}
+      - PGPORT:${CONTAINER_AUTH_PG_PORT}
+      - PGUSER=${AUTH_PG_USER}
+      - POSTGRES_PASSWORD=${AUTH_PG_PASSWORD}
+    ports:
+      - '${HOST_AUTH_PG_PORT}:${CONTAINER_AUTH_PG_PORT}'
+    command: ['-p', $CONTAINER_AUTH_PG_PORT]
+    volumes:
+      - ./pgdata/auth:/var/lib/postgresql/data
+    networks:
+      - ecommerce-auth
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'sh',
+          '-c',
+          'pg_isready',
+          '-U',
+          '$${POSTGRES_USER}',
+          '-d',
+          '$${POSTGRES_DB}',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 160s
+
+  checkout:
+    container_name: checkout
+    build:
+      context: ./checkout
+      dockerfile: ./docker/Dockerfile
+    image: ecommerce_checkout:latest
+    ports:
+      - '$APP_HOST_CHECKOUT_PORT:$APP_CONTAINER_CHECKOUT_PORT'
+    environment:
+      - PORT=$APP_CONTAINER_CHECKOUT_PORT
+      - CHECKOUT_PG_USER
+      - CHECKOUT_PG_PASSWORD
+      - CONTAINER_CHECKOUT_PG_PORT
+      - CHECKOUT_DATABASE
+      - UID_GENERATOR_HOST
+      - UID_GENERATOR_PORT
+      - AUTH_PORT=${AUTH_CONTAINER_PORT}
+      - KEYCLOAK_REALM
+      - KEYCLOAK_ADMIN
+      - KEYCLOAK_ADMIN_PASSWORD
+      - KEYCLOAK_CLIENT_SECRET
+      - KEYCLOAK_CLIENT_ID
+      - KEYCLOAK_PROVIDER
+      - ZEEBE_GATEWAY_PORT=${CONTAINER_ZEEBE_GATEWAY_PORT}
+      - ZEEBE_OPERATE_PORT=${CONTAINER_ZEEBE_OPERATE_PORT}
+      - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
+      - KAFKA_BOOTSTRAP_SERVERS
+    networks:
+      - ecommerce
+      - ecommerce-checkout
+      - ecommerce-zeebe
+    restart: on-failure
+    depends_on:
+      auth-server:
+        condition: service_healthy
+      uid-generator:
+        condition: service_started
+      checkout-postgres:
+        condition: service_healthy
+      zeebe:
+        condition: service_healthy
+
+  checkout-postgres:
+    container_name: checkout-postgres
+    image: 'postgres:latest'
+    environment:
+      - POSTGRES_DB=${CHECKOUT_DATABASE}
+      - POSTGRES_USER=${CHECKOUT_PG_USER}
+      - PGPORT:${CONTAINER_CHECKOUT_PG_PORT}
+      - PGUSER=${CHECKOUT_PG_USER}
+      - POSTGRES_PASSWORD=${CHECKOUT_PG_PASSWORD}
+    ports:
+      - '${HOST_CHECKOUT_PG_PORT}:${CONTAINER_CHECKOUT_PG_PORT}'
+    command: ['-p', $CONTAINER_CHECKOUT_PG_PORT]
+    volumes:
+      - ./pgdata/checkout:/var/lib/postgresql/data
+    networks:
+      - ecommerce-checkout
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'sh',
+          '-c',
+          'pg_isready',
+          '-U',
+          '$${POSTGRES_USER}',
+          '-d',
+          '$${POSTGRES_DB}',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 160s
+
+  order:
+    container_name: order
+    build:
+      context: ./order
+      dockerfile: ./docker/Dockerfile
+    image: ecommerce_order:latest
+    ports:
+      - '$APP_HOST_ORDER_PORT:$APP_CONTAINER_ORDER_PORT'
+    environment:
+      - PORT=$APP_CONTAINER_ORDER_PORT
+      - ORDER_PG_USER
+      - ORDER_PG_PASSWORD
+      - CONTAINER_ORDER_PG_PORT
+      - ORDER_DATABASE
+      - UID_GENERATOR_HOST
+      - UID_GENERATOR_PORT
+      - AUTH_PORT=${AUTH_CONTAINER_PORT}
+      - KEYCLOAK_REALM
+      - KEYCLOAK_ADMIN
+      - KEYCLOAK_ADMIN_PASSWORD
+      - KEYCLOAK_CLIENT_SECRET
+      - KEYCLOAK_CLIENT_ID
+      - KEYCLOAK_PROVIDER
+      - ZEEBE_GATEWAY_PORT=${CONTAINER_ZEEBE_GATEWAY_PORT}
+      - ZEEBE_OPERATE_PORT=${CONTAINER_ZEEBE_OPERATE_PORT}
+      - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
+      - KAFKA_BOOTSTRAP_SERVERS
+    networks:
+      - ecommerce
+      - ecommerce-order
+      - ecommerce-zeebe
+    restart: on-failure
+    depends_on:
+      auth-server:
+        condition: service_healthy
+      uid-generator:
+        condition: service_started
+      order-postgres:
+        condition: service_healthy
+      zeebe:
+        condition: service_healthy
+
+  order-postgres:
+    container_name: order-postgres
+    image: 'postgres:latest'
+    environment:
+      - POSTGRES_DB=${ORDER_DATABASE}
+      - POSTGRES_USER=${ORDER_PG_USER}
+      - PGPORT:${CONTAINER_ORDER_PG_PORT}
+      - PGUSER=${ORDER_PG_USER}
+      - POSTGRES_PASSWORD=${ORDER_PG_PASSWORD}
+    ports:
+      - '${HOST_ORDER_PG_PORT}:${CONTAINER_ORDER_PG_PORT}'
+    command: ['-p', $CONTAINER_ORDER_PG_PORT]
+    volumes:
+      - ./pgdata/order:/var/lib/postgresql/data
+    networks:
+      - ecommerce-order
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'sh',
+          '-c',
+          'pg_isready',
+          '-U',
+          '$${POSTGRES_USER}',
+          '-d',
+          '$${POSTGRES_DB}',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 160s
+
+  payment:
+    container_name: payment
+    build:
+      context: ./payment
+      dockerfile: ./docker/Dockerfile
+    image: ecommerce_payment:latest
+    ports:
+      - '$APP_HOST_PAYMENT_PORT:$APP_CONTAINER_PAYMENT_PORT'
+    environment:
+      - PORT=$APP_CONTAINER_PAYMENT_PORT
+      - PAYMENT_PG_USER
+      - PAYMENT_PG_PASSWORD
+      - CONTAINER_PAYMENT_PG_PORT
+      - PAYMENT_DATABASE
+      - UID_GENERATOR_HOST
+      - UID_GENERATOR_PORT
+      - AUTH_PORT=${AUTH_CONTAINER_PORT}
+      - KEYCLOAK_REALM
+      - KEYCLOAK_ADMIN
+      - KEYCLOAK_ADMIN_PASSWORD
+      - KEYCLOAK_CLIENT_SECRET
+      - KEYCLOAK_CLIENT_ID
+      - KEYCLOAK_PROVIDER
+      - ZEEBE_GATEWAY_PORT=${CONTAINER_ZEEBE_GATEWAY_PORT}
+      - ZEEBE_OPERATE_PORT=${CONTAINER_ZEEBE_OPERATE_PORT}
+      - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
+      - KAFKA_BOOTSTRAP_SERVERS
+      - STRIPE_TEST_SECRET
+    networks:
+      - ecommerce
+      - ecommerce-payment
+      - ecommerce-zeebe
+    restart: on-failure
+    depends_on:
+      auth-server:
+        condition: service_healthy
+      uid-generator:
+        condition: service_started
+      payment-postgres:
+        condition: service_healthy
+      zeebe:
+        condition: service_healthy
+
+  payment-postgres:
+    container_name: payment-postgres
+    image: 'postgres:latest'
+    environment:
+      - POSTGRES_DB=${PAYMENT_DATABASE}
+      - POSTGRES_USER=${PAYMENT_PG_USER}
+      - PGPORT:${CONTAINER_PAYMENT_PG_PORT}
+      - PGUSER=${PAYMENT_PG_USER}
+      - POSTGRES_PASSWORD=${PAYMENT_PG_PASSWORD}
+    ports:
+      - '${HOST_PAYMENT_PG_PORT}:${CONTAINER_PAYMENT_PG_PORT}'
+    command: ['-p', $CONTAINER_PAYMENT_PG_PORT]
+    volumes:
+      - ./pgdata/payment:/var/lib/postgresql/data
+    networks:
+      - ecommerce-payment
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'sh',
+          '-c',
+          'pg_isready',
+          '-U',
+          '$${POSTGRES_USER}',
+          '-d',
+          '$${POSTGRES_DB}',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 160s
+
+  inventory:
+    container_name: inventory
+    build:
+      context: ./inventory
+      dockerfile: ./docker/Dockerfile
+    image: ecommerce_inventory:latest
+    ports:
+      - '$APP_HOST_INVENTORY_PORT:$APP_CONTAINER_INVENTORY_PORT'
+    environment:
+      - PORT=$APP_CONTAINER_INVENTORY_PORT
+      - INVENTORY_PG_USER
+      - INVENTORY_PG_PASSWORD
+      - CONTAINER_INVENTORY_PG_PORT
+      - INVENTORY_DATABASE
+      - UID_GENERATOR_HOST
+      - UID_GENERATOR_PORT
+      - AUTH_PORT=${AUTH_CONTAINER_PORT}
+      - KEYCLOAK_REALM
+      - KEYCLOAK_ADMIN
+      - KEYCLOAK_ADMIN_PASSWORD
+      - KEYCLOAK_CLIENT_SECRET
+      - KEYCLOAK_CLIENT_ID
+      - KEYCLOAK_PROVIDER
+      - ZEEBE_GATEWAY_PORT=${CONTAINER_ZEEBE_GATEWAY_PORT}
+      - ZEEBE_OPERATE_PORT=${CONTAINER_ZEEBE_OPERATE_PORT}
+      - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
+      - KAFKA_BOOTSTRAP_SERVERS
+    networks:
+      - ecommerce
+      - ecommerce-inventory
+      - ecommerce-zeebe
+    restart: on-failure
+    depends_on:
+      auth-server:
+        condition: service_healthy
+      uid-generator:
+        condition: service_started
+      inventory-postgres:
+        condition: service_healthy
+      zeebe:
+        condition: service_healthy
+
+  inventory-postgres:
+    container_name: inventory-postgres
+    image: 'postgres:latest'
+    environment:
+      - POSTGRES_DB=${INVENTORY_DATABASE}
+      - POSTGRES_USER=${INVENTORY_PG_USER}
+      - PGPORT:${CONTAINER_INVENTORY_PG_PORT}
+      - PGUSER=${INVENTORY_PG_USER}
+      - POSTGRES_PASSWORD=${INVENTORY_PG_PASSWORD}
+    ports:
+      - '${HOST_INVENTORY_PG_PORT}:${CONTAINER_INVENTORY_PG_PORT}'
+    command: ['-p', $CONTAINER_INVENTORY_PG_PORT]
+    volumes:
+      - ./pgdata/inventory:/var/lib/postgresql/data
+    networks:
+      - ecommerce-inventory
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'sh',
+          '-c',
+          'pg_isready',
+          '-U',
+          '$${POSTGRES_USER}',
+          '-d',
+          '$${POSTGRES_DB}',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 160s
+
+  zeebe:
+    container_name: zeebe
+    image: camunda/zeebe:latest
+    hostname: zeebe
+    environment:
+      # ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT: ${ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT}
+      - ZEEBE_LOG_LEVEL=debug
+      # SPRING_CONFIG_ADDITIONAL_LOCATION: ${SPRING_CONFIG_ADDITIONAL_LOCATION}
+      # KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      # KAFKA_TOPIC: ${KAFKA_TOPIC}
+      - ZEEBE_HAZELCAST_CLUSTER_NAME=dev
+    ports:
+      - '$HOST_ZEEBE_GATEWAY_PORT:$CONTAINER_ZEEBE_GATEWAY_PORT'
+      - '$HOST_ZEEBE_OPERATE_PORT:$CONTAINER_ZEEBE_OPERATE_PORT'
+      - '$HOST_ZEEBE_TASK_PORT:$CONTAINER_ZEEBE_TASKLIST_PORT'
+      - '5701:5701'
+    volumes:
+      - ./zeebe-exporter/hazelcast/zeebe-hazelcast-exporter-1.4.0-jar-with-dependencies.jar:/usr/local/zeebe/exporters/zeebe-hazelcast-exporter-jar-with-dependencies.jar
+      - ./zeebe-exporter/hazelcast/application.yaml:/usr/local/zeebe/config/application.yaml
+    networks:
+      - ecommerce-zeebe
+    restart: on-failure
+    healthcheck:
+      test: [
+          'CMD-SHELL',
+          "timeout 10s bash -c ':> /dev/tcp/127.0.0.1/$${CONTAINER_ZEEBE_GATEWAY_PORT}' || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      - ecommerce-kafka
+
+  simple-monitor-in-memory:
+    container_name: zeebe-simple-monitor-in-memory
+    image: ghcr.io/camunda-community-hub/zeebe-simple-monitor:2.5.2
+    environment:
+      - zeebe.client.broker.gateway-address=zeebe:26500
+      - zeebe.client.worker.hazelcast.connection=zeebe:5701
+      - zeebe.client.worker.hazelcast.clusterName=dev
+    ports:
+      - "$HOST_MONITOR_PORT:$MONITOR_CONTAINER_PORT"
+    depends_on:
+      - zeebe
+    networks:
+      - ecommerce-zeebe
+
+  ecommerce-zookeeper:
+    container_name: ecommerce-zookeeper
+    image: docker.io/bitnami/zookeeper:3.9
+    ports:
+      - "$HOST_ZOOKEEPER_PORT:$ZOOKEEPER_CONTAINER_PORT"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    volumes:
+      - ${ZOOKEEPER_HOST_VOLUME}:/zookeeper
+    networks:
+      - ecommerce
+
+  ecommerce-kafka:
+    container_name: ecommerce-kafka
+    image: docker.io/bitnami/kafka:3.4
+    ports:
+      - '$HOST_KAFKA_PORT:$KAFKA_CONTAINER_PORT'
+    environment:
+      - KAFKA_CFG_BROKER_ID
+      - KAFKA_CFG_NUM_NETWORK_THREADS
+      - KAFKA_CFG_NUM_IO_THREADS
+      - KAFKA_CFG_SOCKET_SEND_BUFFER_BYTES
+      - KAFKA_CFG_SOCKET_RECEIVE_BUFFER_BYTES
+      - KAFKA_CFG_SOCKET_REQUEST_MAX_BYTES
+      - KAFKA_CFG_LOGS_DIRS=/kafka
+      - KAFKA_CFG_NUM_PARTITIONS
+      - KAFKA_CFG_NUM_RECOVERY_THREADS_PER_DATA_DIR
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR
+      - KAFKA_CFG_LOG_RETENTION_HOURS
+      - KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS
+      - KAFKA_CFG_ZOOKEEPER_CONNECT
+      - KAFKA_CFG_ZOOKEEPER_CONNECTION_TIMEOUT_MS
+      - KAFKA_CFG_GROUP_INITIAL_REBALANCE_DELAY_MS
+    volumes:
+    - ${KAFKA_HOST_VOLUME}:/kafka-logs
+    networks:
+      - ecommerce
+      - ecommerce-zeebe
+    depends_on:
+      - ecommerce-zookeeper
+
+networks:
+  ecommerce-catalog:
+    name: ecommerce-catalog
+    driver: bridge
+  ecommerce-order:
+    name: ecommerce-order
+    driver: bridge
+  ecommerce-payment:
+    name: ecommerce-payment
+    driver: bridge
+  ecommerce-checkout:
+    name: ecommerce-checkout
+    driver: bridge
+  ecommerce-inventory:
+    name: ecommerce-inventory
+    driver: bridge
+  ecommerce-zeebe:
+    name: ecommerce-zeebe
+    driver: bridge
+  ecommerce-user:
+    name: ecommerce-user
+    driver: bridge
+  ecommerce-auth:
+    name: ecommerce-auth
+    driver: bridge
+  ecommerce:
+    name: ecommerce
+    driver: bridge
