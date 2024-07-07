@@ -11,4 +11,6 @@ public interface PaymentGatewayCustomerRepository extends JpaRepository<PaymentG
 
     Optional<PaymentGatewayCustomer> findByUserId(String userId);
 
+    Optional<PaymentGatewayCustomer> findByCustomerId(String customerId);
+
 }
