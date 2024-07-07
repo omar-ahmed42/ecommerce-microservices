@@ -119,7 +119,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Transactional
     public void reserveInventory(List<InventoryItem> items) throws JsonProcessingException {
-        List<Inventory> inventories = inventoryRepository.findAll(
+        List<Inventory> inventories = inventoryRepository.findAllByProductIdIn(
                 items.stream().filter(Objects::nonNull).map(InventoryItem::getProductId).collect(Collectors.toSet()));
 
         Map<Long, Inventory> idToItem = inventories.stream()

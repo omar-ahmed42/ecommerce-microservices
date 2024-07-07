@@ -11,6 +11,6 @@ import com.omarahmed42.inventory.inventory.model.Inventory;
 @Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
-    List<Inventory> findAll(Collection<Long> collect);
+    List<Inventory> findAllByProductIdIn(Collection<Long> productIds);
 
 }
