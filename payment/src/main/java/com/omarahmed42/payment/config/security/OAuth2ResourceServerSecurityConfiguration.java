@@ -23,6 +23,7 @@ public class OAuth2ResourceServerSecurityConfiguration {
         http
                 .csrf(CsrfConfigurer<HttpSecurity>::disable)
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/v1/payment-webhook").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(configurer -> configurer.jwt(Customizer.withDefaults()));
         return http.build();

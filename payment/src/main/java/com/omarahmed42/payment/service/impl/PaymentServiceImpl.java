@@ -38,6 +38,7 @@ import com.stripe.model.SetupIntent;
 import com.stripe.model.StripeObject;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.PaymentIntentCreateParams;
+import com.stripe.param.PaymentIntentCreateParams.AutomaticPaymentMethods.AllowRedirects;
 import com.stripe.param.PaymentMethodAttachParams;
 import com.stripe.param.PaymentMethodCreateParams;
 import com.stripe.param.SetupIntentCreateParams;
@@ -80,12 +81,11 @@ public class PaymentServiceImpl implements PaymentService {
         String customerId = gatewayCustomer.getCustomerId();
 
         BigDecimal totalCost = paymentRequest.getTotalCost();
-        PaymentIntentCreateParams params = new PaymentIntentCreateParams.Builder()
-                .setCustomer(customerId)
-                .setPaymentMethod(payment.getCardId())
-                .setConfirm(true)
-                .setCurrency("usd")
+        PaymentIntentCreateParams params = new PaymentIntentCreateParams.Builder().setCustomer(customerId)
+                .setPaymentMethod(payment.getCardId()).setConfirm(true).setCurrency("usd")
                 .putMetadata("orderId", paymentRequest.getOrderId().toString())
+                .setAutomaticPaymentMethods(PaymentIntentCreateParams.AutomaticPaymentMethods.builder().setEnabled(true)
+                        .setAllowRedirects(AllowRedirects.NEVER).build())
                 .setAmount(totalCost.multiply(BigDecimal.valueOf(100)).longValue()).build();
 
         try {
@@ -105,17 +105,15 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public void handlePaymentIntent(String eventType, PaymentIntent paymentIntent) {
         switch (eventType) {
-            case "payment_intent.succeeded":
-                log.info("Payment for {} succeeded.", paymentIntent.getAmount());
-                handlePaymentIntentSucceeded(paymentIntent);
-                break;
-            case "payment_intent.payment_failed":
-                log.info("Payment for {} failed.", paymentIntent.getId());
-                handlePaymentIntentFailed(paymentIntent);
-                break;
-            default:
-                log.warn("Unhandled event type: {}", eventType);
-                break;
+        case "payment_intent.succeeded" -> {
+            log.info("Payment for {} succeeded.", paymentIntent.getAmount());
+            handlePaymentIntentSucceeded(paymentIntent);
+        }
+        case "payment_intent.payment_failed" -> {
+            log.info("Payment for {} failed.", paymentIntent.getId());
+            handlePaymentIntentFailed(paymentIntent);
+        }
+        default -> log.warn("Unhandled event type: {}", eventType);
         }
 
     }
@@ -161,13 +159,11 @@ public class PaymentServiceImpl implements PaymentService {
             String userId = SecurityUtils.getSubject();
             Optional<PaymentGatewayCustomer> maybeGatewayCustomer = paymentGatewayCustomerRepository
                     .findByUserId(userId);
-                    
+
             PaymentGatewayCustomer paymentGatewayCustomer = null;
             if (maybeGatewayCustomer.isEmpty()) {
-                Customer customer = Customer
-                        .create(CustomerCreateParams.builder()
-                                .setName(userId)
-                                .setMetadata(Map.of("userId", userId)).build());
+                Customer customer = Customer.create(
+                        CustomerCreateParams.builder().setName(userId).setMetadata(Map.of("userId", userId)).build());
 
                 paymentGatewayCustomer = new PaymentGatewayCustomer();
                 paymentGatewayCustomer.setType(PaymentGatewayType.STRIPE);
@@ -178,11 +174,8 @@ public class PaymentServiceImpl implements PaymentService {
                 paymentGatewayCustomer = maybeGatewayCustomer.get();
             }
 
-            PaymentMethodCreateParams params = PaymentMethodCreateParams
-                    .builder()
-                    .setType(PaymentMethodCreateParams.Type.CARD)
-                    .setCard(buildCardDetails(paymentRequest))
-                    .build();
+            PaymentMethodCreateParams params = PaymentMethodCreateParams.builder()
+                    .setType(PaymentMethodCreateParams.Type.CARD).setCard(buildCardDetails(paymentRequest)).build();
 
             PaymentMethod paymentMethod = PaymentMethod.create(params);
             PaymentMethodAttachParams paymentMethodAttachParams = PaymentMethodAttachParams.builder()
@@ -205,24 +198,16 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private PaymentMethodCreateParams.CardDetails buildCardDetails(PaymentCardRequest payment) {
-        return PaymentMethodCreateParams.CardDetails
-                .builder()
-                .setNumber(payment.number())
-                .setExpYear(payment.expYear())
-                .setExpMonth(payment.expMonth())
-                .setCvc(payment.cvc())
-                .build();
+        return PaymentMethodCreateParams.CardDetails.builder().setNumber(payment.number()).setExpYear(payment.expYear())
+                .setExpMonth(payment.expMonth()).setCvc(payment.cvc()).build();
     }
 
     @Override
     public SetupIntentResponse setupIntent() throws StripeException {
         String userId = SecurityUtils.getSubject();
         PaymentGatewayCustomer gatewayCustomer = paymentGatewayCustomerService.getOrAddPaymentGatewayCustomer(userId);
-        SetupIntentCreateParams params = SetupIntentCreateParams.builder()
-                .setCustomer(gatewayCustomer.getCustomerId())
-                .addPaymentMethodType("card")
-                .setUsage(Usage.OFF_SESSION)
-                .build();
+        SetupIntentCreateParams params = SetupIntentCreateParams.builder().setCustomer(gatewayCustomer.getCustomerId())
+                .addPaymentMethodType("card").setUsage(Usage.OFF_SESSION).build();
 
         SetupIntent setupIntent = SetupIntent.create(params);
         return new SetupIntentResponse(setupIntent.getClientSecret());
@@ -231,22 +216,24 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public void handleEvent(String eventType, StripeObject stripeObject) {
         switch (eventType) {
-            case "payment_method.attached":
-                log.info("Payment method with id {} attached for customer with id {}",
-                        ((PaymentMethod) stripeObject).getId(), ((PaymentMethod) stripeObject).getCustomer());
-                handlePaymentMethodAttached((PaymentMethod) stripeObject);
-                break;
-            case "payment_intent.succeeded":
-                log.info("Payment for {} succeeded.", ((PaymentIntent) stripeObject).getAmount());
-                handlePaymentIntentSucceeded((PaymentIntent) stripeObject);
-                break;
-            case "payment_intent.payment_failed":
-                log.info("Payment for {} failed.", ((PaymentIntent) stripeObject).getId());
-                handlePaymentIntentFailed((PaymentIntent) stripeObject);
-                break;
-            default:
-                log.warn("Unhandled event type: {}", eventType);
-                break;
+        case "charge.succeeded" -> {
+            log.info("Charge operation for {} succeeded");
+            // TODO: Handle this case
+        }
+        case "payment_method.attached" -> {
+            log.info("Payment method with id {} attached for customer with id {}",
+                    ((PaymentMethod) stripeObject).getId(), ((PaymentMethod) stripeObject).getCustomer());
+            handlePaymentMethodAttached((PaymentMethod) stripeObject);
+        }
+        case "payment_intent.succeeded" -> {
+            log.info("Payment for {} succeeded.", ((PaymentIntent) stripeObject).getAmount());
+            handlePaymentIntentSucceeded((PaymentIntent) stripeObject);
+        }
+        case "payment_intent.payment_failed" -> {
+            log.info("Payment for {} failed.", ((PaymentIntent) stripeObject).getId());
+            handlePaymentIntentFailed((PaymentIntent) stripeObject);
+        }
+        default -> log.warn("Unhandled event type: {}", eventType);
         }
     }
 

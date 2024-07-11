@@ -13,7 +13,7 @@ import jakarta.annotation.PostConstruct;
 @Deployment(resources = "classpath:payment-purchase.bpmn")
 public class PaymentApplication {
 
-	@Value("${stripe.endpoint.secret}")
+	@Value("${stripe.api.key}")
 	private String stripeSecretApiKey;
 
 	@PostConstruct

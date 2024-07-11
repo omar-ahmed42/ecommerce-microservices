@@ -12,6 +12,7 @@ import com.nimbusds.jose.shaded.gson.JsonSyntaxException;
 import com.omarahmed42.payment.dto.request.PaymentCardRequest;
 import com.omarahmed42.payment.dto.response.SetupIntentResponse;
 import com.omarahmed42.payment.service.PaymentService;
+import com.stripe.Stripe;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Event;
@@ -64,10 +65,13 @@ public class PaymentController {
             } catch (SignatureVerificationException e) {
                 // Invalid signature
                 log.error("⚠️  Webhook error while validating signature.");
+                log.error("Signature error is {}", e);
+                log.error("Code {} | Status Code {} | User Message {} | Message {} | SigHeader {}", e.getCode(), e.getStatusCode(), e.getUserMessage(), e.getMessage(), e.getSigHeader());
                 return ResponseEntity.badRequest().build();
             }
             // Deserialize the nested object inside the event
             EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
+            log.info("Event version {} | Stripe version {}", event.getApiVersion(), Stripe.API_VERSION);
             StripeObject stripeObject;
             if (dataObjectDeserializer.getObject().isPresent()) {
                 stripeObject = dataObjectDeserializer.getObject().get();

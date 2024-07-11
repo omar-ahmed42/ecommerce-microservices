@@ -21,10 +21,22 @@ public class RetrievePaymentPayload implements Serializable {
     public Map<String, String> asMap() throws JsonProcessingException {
         Map<String, String> result = new HashMap<>();
         result.put("orderId", String.valueOf(orderId));
+        result.put("totalCost", totalCost.toString());
         result.put("paymentId", paymentId);
         result.put("userId", userId);
         result.put("reason", reason);
         result.put("correlationId", correlationId);
         return result;
+    }
+    
+    public static RetrievePaymentPayload fromMap(Map<String, Object> map) {
+        RetrievePaymentPayload payload = new RetrievePaymentPayload();
+        payload.setOrderId(Long.valueOf((String) map.get("orderId")));
+        payload.setTotalCost(new BigDecimal((String) map.get("totalCost")));
+        payload.setPaymentId((String) map.get("paymentId"));
+        payload.setUserId((String) map.get("userId"));
+        payload.setReason((String) map.get("reason"));
+        payload.setCorrelationId((String) map.get("correlationId"));
+        return payload;
     }
 }

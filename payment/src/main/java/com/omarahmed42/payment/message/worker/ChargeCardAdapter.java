@@ -14,8 +14,10 @@ import com.omarahmed42.payment.service.PaymentService;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.spring.client.annotation.JobWorker;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class ChargeCardAdapter {
 
@@ -23,10 +25,12 @@ public class ChargeCardAdapter {
     private final MessageSender messageSender;
     private final ObjectMapper objectMapper;
 
-    @JobWorker(autoComplete = true, type = "retrieve-products-prices")
+    @JobWorker(autoComplete = true, type = "charge-card")
     public Map<String, String> handle(ActivatedJob job) {
         Map<String, Object> variablesAsMap = job.getVariablesAsMap();
-        RetrievePaymentPayload payload = objectMapper.convertValue(variablesAsMap, RetrievePaymentPayload.class);
+        log.info("ChargeCardAdapter variablesAsMap {}", variablesAsMap.toString());
+        // RetrievePaymentPayload payload = objectMapper.convertValue(variablesAsMap, RetrievePaymentPayload.class);
+        RetrievePaymentPayload payload = RetrievePaymentPayload.fromMap(variablesAsMap);
 
         PaymentRequest paymentRequest = PaymentRequest.builder()
                 .orderId(payload.getOrderId())
@@ -36,6 +40,9 @@ public class ChargeCardAdapter {
                 .build();
 
         paymentService.chargeCard(paymentRequest);
+
+        // Message<?> messageToBeSent = new Message("PaymentRetrievedEvent");
+        // messageSender.send(messageToBeSent);
 
         return Map.of("correlation_id", payload.getCorrelationId());
     }

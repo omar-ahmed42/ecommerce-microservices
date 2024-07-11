@@ -13,9 +13,11 @@ import com.omarahmed42.payment.message.producer.MessageSender;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class MessageListener {
 
     private final ObjectMapper objectMapper;
@@ -26,20 +28,19 @@ public class MessageListener {
             throws Exception {
         if (messageType == null)
             return;
-        if ("RetrievePayment".equals(messageType)) {
+        log.info("Consuming message of type {} and payload {}", messageType, payload);
+        if ("RetrievePaymentEvent".equals(messageType)) {
             chargeCard(objectMapper.readValue(payload, new TypeReference<Message<RetrievePaymentPayload>>() {
             }));
         }
     }
 
     private void chargeCard(Message<RetrievePaymentPayload> message) throws Exception {
+        log.info("Charging card for message with correlation id {} of type {}", message.getCorrelationId(),
+        message.getType());
         RetrievePaymentPayload messagePayload = message.getPayload();
 
-        zeebe.newCreateInstanceCommand()
-                .bpmnProcessId("charge-card")
-                .latestVersion()
-                .variables(messagePayload.asMap())
-                .send()
-                .join();
+        zeebe.newCreateInstanceCommand().bpmnProcessId("charge-card").latestVersion().variables(messagePayload.asMap())
+                .send().join();
     }
 }
