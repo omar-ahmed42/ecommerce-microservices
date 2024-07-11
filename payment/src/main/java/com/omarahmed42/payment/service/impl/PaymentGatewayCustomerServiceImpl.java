@@ -1,5 +1,7 @@
 package com.omarahmed42.payment.service.impl;
 
+import org.springframework.stereotype.Service;
+
 import java.util.Map;
 import java.util.Optional;
 
@@ -15,6 +17,7 @@ import com.stripe.param.CustomerCreateParams;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Service
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentGatewayCustomerServiceImpl implements PaymentGatewayCustomerService {
@@ -55,5 +58,4 @@ public class PaymentGatewayCustomerServiceImpl implements PaymentGatewayCustomer
         return paymentGatewayCustomerRepository.findByCustomerId(customerId);
     }
 
-    
 }
