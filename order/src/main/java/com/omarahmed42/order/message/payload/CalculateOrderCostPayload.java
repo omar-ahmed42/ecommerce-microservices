@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.omarahmed42.order.message.payload.item.PricedItem;
 
@@ -27,6 +28,18 @@ public class CalculateOrderCostPayload implements Serializable {
         result.put("reason", reason);
         result.put("correlationId", correlationId);
         return result;
+    }
+
+    public static CalculateOrderCostPayload fromMap(Map<String, ?> map, ObjectMapper mapper)
+            throws JsonProcessingException {
+        CalculateOrderCostPayload payload = new CalculateOrderCostPayload();
+        payload.setOrderId(Long.valueOf((String) map.get("orderId")));
+        payload.setItems(mapper.readValue((String) map.get("items"), new TypeReference<List<PricedItem>>() {
+        }));
+        payload.setReason((String) map.get("reason"));
+        payload.setCorrelationId((String) map.get("correlationId"));
+
+        return payload;
     }
 
     public void addPricedItem(PricedItem item) {

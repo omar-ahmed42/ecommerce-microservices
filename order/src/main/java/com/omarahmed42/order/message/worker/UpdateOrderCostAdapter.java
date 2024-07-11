@@ -4,6 +4,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.omarahmed42.order.dto.message.Message;
 import com.omarahmed42.order.dto.response.OrderDetails;
@@ -25,10 +26,11 @@ public class UpdateOrderCostAdapter {
     private final ObjectMapper objectMapper;
 
     @JobWorker(autoComplete = true, type = "update-order-cost")
-    public Map<String, String> handle(ActivatedJob job) {
+    public Map<String, String> handle(ActivatedJob job) throws JsonProcessingException {
         Map<String, Object> variablesAsMap = job.getVariablesAsMap();
-        CalculateOrderCostPayload payload = objectMapper.convertValue(variablesAsMap,
-                CalculateOrderCostPayload.class);
+        CalculateOrderCostPayload payload = CalculateOrderCostPayload.fromMap(variablesAsMap, objectMapper);
+        //  objectMapper.convertValue(variablesAsMap,
+        //         CalculateOrderCostPayload.class);
 
         OrderDetails orderDetails = orderService.updateOrderPrices(payload.getOrderId(), payload.getItems());
 

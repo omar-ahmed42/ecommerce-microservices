@@ -29,8 +29,9 @@ public class RetrieveProductsPricesAdapter {
         Map<String, Object> variablesAsMap = job.getVariablesAsMap();
         log.info("RetrieveProductsPricesAdapter variablesAsMap {}", variablesAsMap.toString());
 
-        RetrievePricedItemsPayload payload = objectMapper.readValue(job.getVariables(),
-                RetrievePricedItemsPayload.class);
+        RetrievePricedItemsPayload payload = RetrievePricedItemsPayload.fromMap(variablesAsMap, objectMapper);
+        // RetrievePricedItemsPayload payload = objectMapper.readValue(job.getVariables(),
+                // RetrievePricedItemsPayload.class);
 
         Message<RetrievePricedItemsPayload> message = new Message<>("RetrievePricedProductsEvent", payload);
         message.setCorrelationId(payload.getCorrelationId());
