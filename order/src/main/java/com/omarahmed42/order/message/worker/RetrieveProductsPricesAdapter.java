@@ -5,7 +5,6 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.omarahmed42.order.dto.message.Message;
 import com.omarahmed42.order.message.payload.RetrievePricedItemsPayload;

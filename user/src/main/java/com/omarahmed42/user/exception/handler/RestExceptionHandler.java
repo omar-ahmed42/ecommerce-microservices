@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -19,7 +18,6 @@ import com.omarahmed42.user.exception.UserCreationException;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Path.Node;
-import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
 
 @ControllerAdvice
