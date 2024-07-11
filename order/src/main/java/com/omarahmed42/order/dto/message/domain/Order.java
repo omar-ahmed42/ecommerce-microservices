@@ -12,7 +12,7 @@ public class Order implements Serializable {
     private Long id;
     private Long shippingAddressId;
     private Long billingAddressId;
-    private Long paymentId;
+    private String paymentId;
     private String userId;
     private List<OrderItem> orderItems = new ArrayList<>();
 

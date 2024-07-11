@@ -14,6 +14,6 @@ import com.omarahmed42.payment.model.Payment;
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
     @Query(value = "SELECT p FROM Payment p LEFT JOIN PaymentGatewayCustomer pgc ON p.gatewayCustomer.id = pgc.id WHERE p.id = :payment_id")
-    Optional<Payment> findOne(@Param("payment_id") Long paymentId);
+    Optional<Payment> findOne(@Param("payment_id") UUID paymentId);
 
 }

@@ -48,7 +48,7 @@ public class Order implements Serializable {
     private Long billingAddressId;
 
     @Column(name = "payment_id")
-    private Long paymentId;
+    private String paymentId;
 
     @Column(name = "user_id")
     private String userId;

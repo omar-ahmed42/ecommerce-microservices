@@ -1,5 +1,7 @@
 package com.omarahmed42.payment.service;
 
+import java.util.UUID;
+
 import com.omarahmed42.payment.dto.request.PaymentCardRequest;
 import com.omarahmed42.payment.dto.request.PaymentRequest;
 import com.omarahmed42.payment.dto.response.PaymentResponse;
@@ -9,7 +11,7 @@ import com.stripe.model.PaymentIntent;
 import com.stripe.model.StripeObject;
 
 public interface PaymentService {
-    PaymentResponse getPayment(Long paymentId);
+    PaymentResponse getPayment(UUID paymentId);
 
     void chargeCard(PaymentRequest paymentRequest);
 

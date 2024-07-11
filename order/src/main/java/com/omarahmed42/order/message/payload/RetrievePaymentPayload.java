@@ -13,7 +13,7 @@ import lombok.Data;
 public class RetrievePaymentPayload implements Serializable {
     private Long orderId;
     private BigDecimal totalCost;
-    private Long paymentId;
+    private String paymentId;
     private String userId;
     private String reason = "Order Fulfillment";
     private String correlationId;
@@ -21,8 +21,8 @@ public class RetrievePaymentPayload implements Serializable {
     public Map<String, String> asMap() throws JsonProcessingException {
         Map<String, String> result = new HashMap<>();
         result.put("orderId", String.valueOf(orderId));
-        result.put("paymentId", String.valueOf(paymentId));
-        result.put("userId", String.valueOf(userId));
+        result.put("paymentId", paymentId);
+        result.put("userId", userId);
         result.put("reason", reason);
         result.put("correlationId", correlationId);
         return result;

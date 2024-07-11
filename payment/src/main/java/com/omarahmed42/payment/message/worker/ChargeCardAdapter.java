@@ -1,6 +1,7 @@
 package com.omarahmed42.payment.message.worker;
 
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
@@ -29,7 +30,7 @@ public class ChargeCardAdapter {
 
         PaymentRequest paymentRequest = PaymentRequest.builder()
                 .orderId(payload.getOrderId())
-                .paymentId(payload.getPaymentId())
+                .paymentId(UUID.fromString(payload.getPaymentId()))
                 .totalCost(payload.getTotalCost())
                 .userId(payload.getUserId())
                 .build();

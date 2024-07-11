@@ -42,7 +42,7 @@ public class CheckoutServiceImpl implements CheckoutService {
     private void setOrderDetails(Order order, CheckoutOrder checkoutOrder, String userId) {
         order.setBillingAddressId(checkoutOrder.getBillingAddressId());
         order.setShippingAddressId(checkoutOrder.getShippingAddressId());
-        order.setPaymentId(checkoutOrder.getPaymentId());
+        order.setPaymentId(checkoutOrder.getPaymentId().toString());
         order.setUserId(userId);
     }
 

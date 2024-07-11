@@ -14,7 +14,7 @@ public class OrderDetails implements Serializable {
     private OrderStatus status;
     private Long shippingAddressId;
     private Long billingAddressId;
-    private Long paymentId;
+    private String paymentId;
     private String userId;
 
 }

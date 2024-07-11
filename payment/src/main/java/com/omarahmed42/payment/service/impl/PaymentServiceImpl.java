@@ -60,7 +60,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional(readOnly = true)
-    public PaymentResponse getPayment(Long paymentId) {
+    public PaymentResponse getPayment(UUID paymentId) {
         Payment payment = paymentRepository.findOne(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment with id " + paymentId + " not found"));
         return paymentMapper.toPaymentResponse(payment);
@@ -68,7 +68,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public void chargeCard(PaymentRequest paymentRequest) {
-        Long paymentId = paymentRequest.getPaymentId();
+        UUID paymentId = paymentRequest.getPaymentId();
         Payment payment = paymentRepository.findOne(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment with id " + paymentId + " not found"));
 
@@ -161,7 +161,7 @@ public class PaymentServiceImpl implements PaymentService {
             String userId = SecurityUtils.getSubject();
             Optional<PaymentGatewayCustomer> maybeGatewayCustomer = paymentGatewayCustomerRepository
                     .findByUserId(userId);
-
+                    
             PaymentGatewayCustomer paymentGatewayCustomer = null;
             if (maybeGatewayCustomer.isEmpty()) {
                 Customer customer = Customer
