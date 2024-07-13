@@ -52,6 +52,9 @@ services:
         condition: service_healthy
       zeebe:
         condition: service_healthy
+      ecommerce-kafka:
+        condition: service_healthy
+      
 
   catalog-postgres:
     container_name: catalog-postgres
@@ -157,6 +160,8 @@ services:
       user-postgres:
         condition: service_healthy
       zeebe:
+        condition: service_healthy
+      ecommerce-kafka:
         condition: service_healthy
 
   auth-server:
@@ -347,6 +352,8 @@ services:
         condition: service_healthy
       zeebe:
         condition: service_healthy
+      ecommerce-kafka:
+        condition: service_healthy
 
   order-postgres:
     container_name: order-postgres
@@ -424,6 +431,8 @@ services:
         condition: service_healthy
       zeebe:
         condition: service_healthy
+      ecommerce-kafka:
+        condition: service_healthy
 
   payment-postgres:
     container_name: payment-postgres
@@ -499,6 +508,8 @@ services:
         condition: service_healthy
       zeebe:
         condition: service_healthy
+      ecommerce-kafka:
+        condition: service_healthy
 
   inventory-postgres:
     container_name: inventory-postgres
@@ -538,18 +549,23 @@ services:
     image: camunda/zeebe:latest
     hostname: zeebe
     environment:
-      # ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT: ${ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT}
-      - ZEEBE_LOG_LEVEL=debug
-      # SPRING_CONFIG_ADDITIONAL_LOCATION: ${SPRING_CONFIG_ADDITIONAL_LOCATION}
-      # KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
-      # KAFKA_TOPIC: ${KAFKA_TOPIC}
-      - ZEEBE_HAZELCAST_CLUSTER_NAME=dev
+      - ZEEBE_LOG_LEVEL=trace
+      - ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS=4
+      - ZEEBE_GATEWAY_CLUSTER_REQUESTTIMEOUT=30s
+      - ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE=80MB
+      - ZEEBE_HAZELCAST_CLUSTER_NAME
       - CONTAINER_ZEEBE_GATEWAY_PORT
+      - ZEEBE_BROKER_DATA_SNAPSHOTPERIOD
+      - ZEEBE_BROKER_DATA_LOGSEGMENTSIZE
+      - ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING
+      - ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
+      - ZEEBE_BROKER_THREADS_IOTHREADCOUNT
+      - ZEEBE_BROKER_BACKPRESSURE_ENABLED
     ports:
       - '$HOST_ZEEBE_GATEWAY_PORT:$CONTAINER_ZEEBE_GATEWAY_PORT'
       - '$HOST_ZEEBE_OPERATE_PORT:$CONTAINER_ZEEBE_OPERATE_PORT'
       - '$HOST_ZEEBE_TASK_PORT:$CONTAINER_ZEEBE_TASKLIST_PORT'
-      - '5701:5701'
+      - '$HOST_ZEEBE_HAZELCAST_PORT:$CONTAINER_ZEEBE_HAZELCAST_PORT'
     volumes:
       - ./zeebe-exporter/hazelcast/zeebe-hazelcast-exporter-1.4.0-jar-with-dependencies.jar:/usr/local/zeebe/exporters/zeebe-hazelcast-exporter-jar-with-dependencies.jar
       - ./zeebe-exporter/hazelcast/application.yaml:/usr/local/zeebe/config/application.yaml
@@ -571,8 +587,8 @@ services:
     container_name: zeebe-simple-monitor-in-memory
     image: ghcr.io/camunda-community-hub/zeebe-simple-monitor:2.5.2
     environment:
-      - zeebe.client.broker.gateway-address=zeebe:26500
-      - zeebe.client.worker.hazelcast.connection=zeebe:5701
+      - zeebe.client.broker.gateway-address=zeebe:${CONTAINER_ZEEBE_GATEWAY_PORT}
+      - zeebe.client.worker.hazelcast.connection=zeebe:${CONTAINER_ZEEBE_HAZELCAST_PORT}
       - zeebe.client.worker.hazelcast.clusterName=dev
     ports:
       - "$HOST_MONITOR_PORT:$MONITOR_CONTAINER_PORT"
@@ -618,6 +634,11 @@ services:
       - KAFKA_CFG_GROUP_INITIAL_REBALANCE_DELAY_MS
     volumes:
     - ${KAFKA_HOST_VOLUME}:/kafka-logs
+    healthcheck:
+      test: kafka-topics.sh --list --bootstrap-server localhost:${KAFKA_CONTAINER_PORT} || exit 1
+      interval: 1s
+      timeout: 60s
+      retries: 60
     networks:
       - ecommerce
       - ecommerce-zeebe
