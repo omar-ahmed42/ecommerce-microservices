@@ -1,5 +1,7 @@
 package com.omarahmed42.order.message.listener;
 
+import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -14,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.omarahmed42.order.dto.message.Message;
 import com.omarahmed42.order.dto.message.domain.Order;
 import com.omarahmed42.order.message.payload.CalculateOrderCostPayload;
+import com.omarahmed42.order.message.payload.PaymentRetrievedPayload;
 import com.omarahmed42.order.message.payload.ReserveStockPayload;
 import com.omarahmed42.order.message.payload.RetrievePaymentPayload;
 import com.omarahmed42.order.message.payload.RetrievePricedItemsPayload;
@@ -43,26 +46,29 @@ public class MessageListener {
                 if (messageType == null)
                         return;
                 log.info("Consuming message of type {} and payload {}", messageType, payload);
-            switch (messageType) {
-                case "OrderPlacedEvent" -> placeOrder(objectMapper.readValue(payload, new TypeReference<Message<Order>>() {
-                    }));
-                case "StockReservedEvent" -> retrieveProductsPrices(
-                            objectMapper.readValue(payload,
-                                    new TypeReference<Message<ReserveStockPayload>>() {
-                                    }));
-                case "PricedProductsRetrievedEvent" -> updateOrderCost(
-                            objectMapper.readValue(payload,
-                                    new TypeReference<Message<RetrievePricedItemsPayload>>() {
-                                    }));
-                case "PrepareOrderPaymentEvent" -> retrievePayment(objectMapper.readValue(payload,
-                            new TypeReference<Message<RetrievePaymentPayload>>() {
-                            }));
-                case "PaymentRetrievedEvent" -> completeOrder(objectMapper.readValue(payload,
-                            new TypeReference<Message<RetrievePaymentPayload>>() {
-                            }));
-                default -> {
+                switch (messageType) {
+                        case "OrderPlacedEvent" ->
+                                placeOrder(objectMapper.readValue(payload, new TypeReference<Message<Order>>() {
+                                }));
+                        case "StockReservedEvent" -> retrieveProductsPrices(
+                                        objectMapper.readValue(payload,
+                                                        new TypeReference<Message<ReserveStockPayload>>() {
+                                                        }));
+                        case "PricedProductsRetrievedEvent" -> updateOrderCost(
+                                        objectMapper.readValue(payload,
+                                                        new TypeReference<Message<RetrievePricedItemsPayload>>() {
+                                                        }));
+                        case "PrepareOrderPaymentEvent" -> retrievePayment(objectMapper.readValue(payload,
+                                        new TypeReference<Message<RetrievePaymentPayload>>() {
+                                        }));
+                        case "PaymentRetrievedEvent" -> completeOrder(objectMapper.readValue(payload,
+                                        new TypeReference<Message<PaymentRetrievedPayload>>() {
+                                        }));
+                        case "OrderCompletedEvent" -> log.info("Received OrderCompletedEvent");
+                        default -> {
+                                log.info("No matching event handler for {} ", messageType);
+                        }
                 }
-            }
         }
 
         private void placeOrder(Message<Order> message) throws Exception {
@@ -80,7 +86,6 @@ public class MessageListener {
                                 .map(orderItem -> new Item(orderItem.getProductId(), orderItem.getQuantity()))
                                 .toList());
 
-                log.info("Before creating a new create instance command for place-order");
                 ProcessInstanceEvent instanceEvent = zeebe.newCreateInstanceCommand()
                                 .bpmnProcessId("place-order")
                                 .latestVersion()
@@ -88,7 +93,6 @@ public class MessageListener {
                                 .send()
                                 .join();
                 log.info("Instance event with the following info {}", instanceEvent.toString());
-                log.info("After creating a new create instance command for place-order zeebe");
         }
 
         private void retrieveProductsPrices(Message<ReserveStockPayload> message) throws Exception {
@@ -107,7 +111,6 @@ public class MessageListener {
                                 order.getOrderItems().stream()
                                                 .map(orderItem -> new PricedItem(orderItem.getProductId())).toList());
 
-                log.info("Before publishing a new message command for retrieving products");
                 PublishMessageResponse publishedMessage = zeebe.newPublishMessageCommand()
                                 .messageName(message.getType())
                                 .correlationKey(message.getCorrelationId())
@@ -116,7 +119,6 @@ public class MessageListener {
                                 .join();
                 log.info("Published message key {} and tenant id {}", publishedMessage.getMessageKey(),
                                 publishedMessage.getTenantId());
-                log.info("After publishing a new message command for retrieving products");
         }
 
         private void updateOrderCost(Message<RetrievePricedItemsPayload> message) throws Exception {
@@ -154,18 +156,22 @@ public class MessageListener {
                                 .join();
         }
 
-        private void completeOrder(Message<RetrievePaymentPayload> message) {
+        private void completeOrder(Message<PaymentRetrievedPayload> message) {
                 log.info("Completing order for message with correlation id {} of type {}", message.getCorrelationId(),
                                 message.getType());
 
-                RetrievePaymentPayload payload = message.getPayload();
+                PaymentRetrievedPayload payload = message.getPayload();
 
-                zeebe.newPublishMessageCommand()
+                Map<String, String> map = new HashMap<>();
+                map.put("orderId", String.valueOf(payload.getOrderId()));
+                map.put("correlationId", message.getCorrelationId());
+                PublishMessageResponse messageResponse = zeebe.newPublishMessageCommand()
                                 .messageName(message.getType())
                                 .correlationKey(message.getCorrelationId())
-                                .variables(Map.of("orderId", payload.getOrderId(), "correlationId",
-                                                payload.getCorrelationId()))
+                                .timeToLive(Duration.ofSeconds(30))
+                                .variables(map)
                                 .send()
                                 .join();
+                log.info("Message response: Message Key {}", messageResponse.getMessageKey());
         }
 }
