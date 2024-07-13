@@ -1,5 +1,8 @@
 package com.omarahmed42.payment.message.listener;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -8,6 +11,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.omarahmed42.payment.dto.message.Message;
+import com.omarahmed42.payment.message.payload.CardChargedPayload;
 import com.omarahmed42.payment.message.payload.RetrievePaymentPayload;
 import com.omarahmed42.payment.message.producer.MessageSender;
 
@@ -32,15 +36,30 @@ public class MessageListener {
         if ("RetrievePaymentEvent".equals(messageType)) {
             chargeCard(objectMapper.readValue(payload, new TypeReference<Message<RetrievePaymentPayload>>() {
             }));
+        } else if ("CardChargedEvent".equals(messageType)) {
+            retrievePayment(objectMapper.readValue(payload, new TypeReference<Message<CardChargedPayload>>() {
+            }));
         }
     }
 
     private void chargeCard(Message<RetrievePaymentPayload> message) throws Exception {
         log.info("Charging card for message with correlation id {} of type {}", message.getCorrelationId(),
-        message.getType());
+                message.getType());
         RetrievePaymentPayload messagePayload = message.getPayload();
-
-        zeebe.newCreateInstanceCommand().bpmnProcessId("charge-card").latestVersion().variables(messagePayload.asMap())
+        zeebe.newCreateInstanceCommand().bpmnProcessId("charge-card-process").latestVersion().variables(messagePayload.asMap())
                 .send().join();
+    }
+
+    private void retrievePayment(Message<CardChargedPayload> message) {
+        log.info("Publishing message to retrieve payment correlation id {}", message.getCorrelationId());
+        CardChargedPayload payload = message.getPayload();
+
+        Map<String, String> result = new HashMap<>();
+        result.put("orderId", String.valueOf(payload.getOrderId()));
+        result.put("reason", payload.getReason());
+        result.put("correlationId", payload.getCorrelationId());
+
+        zeebe.newPublishMessageCommand().messageName(message.getType()).correlationKey(message.getCorrelationId())
+                .variables(result).send().join();
     }
 }
