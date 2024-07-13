@@ -17,8 +17,8 @@ import com.omarahmed42.payment.enums.PaymentGatewayType;
 import com.omarahmed42.payment.exception.PaymentNotFoundException;
 import com.omarahmed42.payment.exception.PaymentOrderNotFoundException;
 import com.omarahmed42.payment.mapper.PaymentMapper;
+import com.omarahmed42.payment.message.payload.CardChargedPayload;
 import com.omarahmed42.payment.message.payload.PaymentFailedPayload;
-import com.omarahmed42.payment.message.payload.RetrievePaymentPayload;
 import com.omarahmed42.payment.message.producer.MessageSender;
 import com.omarahmed42.payment.model.Payment;
 import com.omarahmed42.payment.model.PaymentGatewayCustomer;
@@ -68,7 +68,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public void chargeCard(PaymentRequest paymentRequest) {
+    public void chargeCard(PaymentRequest paymentRequest, String correlationId) {
         UUID paymentId = paymentRequest.getPaymentId();
         Payment payment = paymentRepository.findOne(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment with id " + paymentId + " not found"));
@@ -81,12 +81,17 @@ public class PaymentServiceImpl implements PaymentService {
         String customerId = gatewayCustomer.getCustomerId();
 
         BigDecimal totalCost = paymentRequest.getTotalCost();
-        PaymentIntentCreateParams params = new PaymentIntentCreateParams.Builder().setCustomer(customerId)
-                .setPaymentMethod(payment.getCardId()).setConfirm(true).setCurrency("usd")
+        PaymentIntentCreateParams.Builder paramsBuilder = new PaymentIntentCreateParams.Builder()
+                .setCustomer(customerId).setPaymentMethod(payment.getCardId()).setConfirm(true).setCurrency("usd")
                 .putMetadata("orderId", paymentRequest.getOrderId().toString())
                 .setAutomaticPaymentMethods(PaymentIntentCreateParams.AutomaticPaymentMethods.builder().setEnabled(true)
                         .setAllowRedirects(AllowRedirects.NEVER).build())
-                .setAmount(totalCost.multiply(BigDecimal.valueOf(100)).longValue()).build();
+                .setAmount(totalCost.multiply(BigDecimal.valueOf(100)).longValue());
+
+        if (correlationId != null)
+            paramsBuilder.putMetadata("correlationId", correlationId);
+
+        PaymentIntentCreateParams params = paramsBuilder.build();
 
         try {
             PaymentIntent paymentIntent = PaymentIntent.create(params);
@@ -100,6 +105,11 @@ public class PaymentServiceImpl implements PaymentService {
         } catch (StripeException e) {
             log.error("Error while charging card {}", e);
         }
+    }
+
+    @Override
+    public void chargeCard(PaymentRequest paymentRequest) {
+        chargeCard(paymentRequest, null);
     }
 
     @Override
@@ -119,19 +129,24 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private void handlePaymentIntentSucceeded(PaymentIntent paymentIntent) {
+        log.info("Handling payment_intent.succeeded for payment intent with id {} and status {}", paymentIntent.getId(),
+                paymentIntent.getStatus());
         PaymentOrder paymentOrder = paymentOrderRepository.findByPaymentIntentId(paymentIntent.getId())
                 .orElseThrow(PaymentOrderNotFoundException::new);
 
         paymentOrder.setStatus(paymentIntent.getStatus());
         paymentOrderRepository.save(paymentOrder);
 
-        String correlationId = UUID.randomUUID().toString();
-        RetrievePaymentPayload payload = new RetrievePaymentPayload();
-        payload.setPaymentId(null);
+        String correlationId = paymentIntent.getMetadata().get("correlationId");
+
+        CardChargedPayload payload = new CardChargedPayload();
+        payload.setPaymentOrderId(paymentOrder.getId().toString());
+        payload.setPaymentIntentId(paymentOrder.getPaymentIntentId());
         payload.setOrderId(paymentOrder.getOrderId());
+        payload.setPaymentStatus(paymentOrder.getStatus());
         payload.setCorrelationId(correlationId);
 
-        Message<RetrievePaymentPayload> message = new Message<>("PaymentRetrievedEvent", payload);
+        Message<CardChargedPayload> message = new Message<>("CardChargedEvent", payload);
         message.setCorrelationId(correlationId);
         messageSender.send(message);
     }
@@ -216,10 +231,6 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public void handleEvent(String eventType, StripeObject stripeObject) {
         switch (eventType) {
-        case "charge.succeeded" -> {
-            log.info("Charge operation for {} succeeded");
-            // TODO: Handle this case
-        }
         case "payment_method.attached" -> {
             log.info("Payment method with id {} attached for customer with id {}",
                     ((PaymentMethod) stripeObject).getId(), ((PaymentMethod) stripeObject).getCustomer());

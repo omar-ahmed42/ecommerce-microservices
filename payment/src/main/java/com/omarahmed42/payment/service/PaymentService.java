@@ -13,6 +13,7 @@ import com.stripe.model.StripeObject;
 public interface PaymentService {
     PaymentResponse getPayment(UUID paymentId);
 
+    void chargeCard(PaymentRequest paymentRequest, String correlationId);
     void chargeCard(PaymentRequest paymentRequest);
 
     void handlePaymentIntent(String type, PaymentIntent stripeObject);
