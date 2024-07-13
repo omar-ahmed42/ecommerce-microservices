@@ -56,8 +56,7 @@ public class PaymentController {
             // Only verify the event if you have an endpoint secret defined.
             // Otherwise, use the basic event deserialized with GSON.
             try {
-                event = Webhook.constructEvent(
-                        payload, sigHeader, endpointSecret);
+                event = Webhook.constructEvent(payload, sigHeader, endpointSecret);
             } catch (JsonSyntaxException e) {
                 // Invalid payload
                 log.error("⚠️  Webhook error while parsing basic request.");
@@ -66,7 +65,8 @@ public class PaymentController {
                 // Invalid signature
                 log.error("⚠️  Webhook error while validating signature.");
                 log.error("Signature error is {}", e);
-                log.error("Code {} | Status Code {} | User Message {} | Message {} | SigHeader {}", e.getCode(), e.getStatusCode(), e.getUserMessage(), e.getMessage(), e.getSigHeader());
+                log.error("Code {} | Status Code {} | User Message {} | Message {} | SigHeader {}", e.getCode(),
+                        e.getStatusCode(), e.getUserMessage(), e.getMessage(), e.getSigHeader());
                 return ResponseEntity.badRequest().build();
             }
             // Deserialize the nested object inside the event
