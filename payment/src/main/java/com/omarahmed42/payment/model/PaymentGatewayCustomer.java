@@ -35,7 +35,7 @@ public class PaymentGatewayCustomer implements Serializable {
     @Enumerated(EnumType.STRING)
     private PaymentGatewayType type;
 
-    // private Long createdAt;
+    private Long createdAt;
 
     @Column(name = "user_id")
     private String userId;

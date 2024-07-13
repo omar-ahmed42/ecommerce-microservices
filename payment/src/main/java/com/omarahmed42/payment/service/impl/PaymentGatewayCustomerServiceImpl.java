@@ -44,6 +44,7 @@ public class PaymentGatewayCustomerServiceImpl implements PaymentGatewayCustomer
             paymentGatewayCustomer.setType(PaymentGatewayType.STRIPE);
             paymentGatewayCustomer.setUserId(userId);
             paymentGatewayCustomer.setCustomerId(customer.getId());
+            paymentGatewayCustomer.setCreatedAt(customer.getCreated());
             paymentGatewayCustomer = paymentGatewayCustomerRepository.save(paymentGatewayCustomer);
         } else {
             paymentGatewayCustomer = maybeGatewayCustomer.get();
