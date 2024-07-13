@@ -4,9 +4,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
-import com.omarahmed42.order.dto.message.Message;
 import com.omarahmed42.order.dto.response.OrderDetails;
-import com.omarahmed42.order.message.producer.MessageSender;
 import com.omarahmed42.order.service.OrderService;
 
 import io.camunda.zeebe.client.api.response.ActivatedJob;
@@ -19,16 +17,12 @@ public class CompleteOrderAdapter {
 
     private final OrderService orderService;
 
-    private final MessageSender messageSender;
-
-    @JobWorker(autoComplete = true, type = "complete-order")
+    @JobWorker(autoComplete = true, type = "complete-order", fetchVariables = {"orderId", "correlationId"}, maxJobsActive = 15)
     public Map<String, String> handle(ActivatedJob job) {
-        OrderDetails orderDetails = orderService.completeOrder((Long) job.getVariable("orderId"));
+        OrderDetails orderDetails = orderService.completeOrder(Long.valueOf((String) job.getVariable("orderId")));
 
-        Message<OrderDetails> message = new Message<>("OrderCompletedEvent", orderDetails,
-                (String) job.getVariable("correlationId"));
-
-        messageSender.send(message);
-        return Map.of("correlation_id", message.getCorrelationId());
+        Map<String, String> result = orderDetails.asMap();
+        result.put("correlationId", (String) job.getVariable("correlationId"));
+        return result;
     }
 }
