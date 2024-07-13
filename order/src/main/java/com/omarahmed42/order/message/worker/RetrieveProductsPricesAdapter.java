@@ -23,20 +23,17 @@ public class RetrieveProductsPricesAdapter {
     private final MessageSender messageSender;
     private final ObjectMapper objectMapper;
 
-    @JobWorker(autoComplete = true, type = "retrieve-products-prices")
+    @JobWorker(autoComplete = true, type = "retrieve-products-prices", maxJobsActive = 15)
     public Map<String, String> handle(ActivatedJob job) throws JsonProcessingException {
         log.info("In retrieve-products-prices");
         Map<String, Object> variablesAsMap = job.getVariablesAsMap();
         log.info("RetrieveProductsPricesAdapter variablesAsMap {}", variablesAsMap.toString());
 
         RetrievePricedItemsPayload payload = RetrievePricedItemsPayload.fromMap(variablesAsMap, objectMapper);
-        // RetrievePricedItemsPayload payload = objectMapper.readValue(job.getVariables(),
-                // RetrievePricedItemsPayload.class);
-
         Message<RetrievePricedItemsPayload> message = new Message<>("RetrievePricedProductsEvent", payload);
         message.setCorrelationId(payload.getCorrelationId());
 
         messageSender.send(message);
-        return Map.of("RetrieveProductsPrices_correlation_id", message.getCorrelationId());
+        return Map.of("correlationId", message.getCorrelationId());
     }
 }

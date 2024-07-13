@@ -25,13 +25,10 @@ public class UpdateOrderCostAdapter {
     private final MessageSender messageSender;
     private final ObjectMapper objectMapper;
 
-    @JobWorker(autoComplete = true, type = "update-order-cost")
+    @JobWorker(autoComplete = true, type = "update-order-cost", maxJobsActive = 15)
     public Map<String, String> handle(ActivatedJob job) throws JsonProcessingException {
         Map<String, Object> variablesAsMap = job.getVariablesAsMap();
         CalculateOrderCostPayload payload = CalculateOrderCostPayload.fromMap(variablesAsMap, objectMapper);
-        //  objectMapper.convertValue(variablesAsMap,
-        //         CalculateOrderCostPayload.class);
-
         OrderDetails orderDetails = orderService.updateOrderPrices(payload.getOrderId(), payload.getItems());
 
         RetrievePaymentPayload retrievePaymentPayload = new RetrievePaymentPayload();
@@ -45,6 +42,6 @@ public class UpdateOrderCostAdapter {
         message.setCorrelationId(payload.getCorrelationId());
 
         messageSender.send(message);
-        return Map.of("correlation_id", message.getCorrelationId());
+        return Map.of("correlationId", message.getCorrelationId());
     }
 }

@@ -23,7 +23,7 @@ public class InventoryReservationAdapter {
     private final MessageSender messageSender;
     private final ObjectMapper objectMapper;
 
-    @JobWorker(autoComplete = true, type = "reserve-stock")
+    @JobWorker(autoComplete = true, type = "reserve-stock", maxJobsActive = 15)
     public Map<String, String> handle(ActivatedJob job) throws JsonProcessingException {
         Map<String, Object> variablesAsMap = job.getVariablesAsMap();
         log.info("InventoryReservationAdapter variablesAsMap {}", variablesAsMap.toString());
@@ -33,6 +33,6 @@ public class InventoryReservationAdapter {
         Message<ReserveStockPayload> message = new Message<>("ReserveInventoryEvent", payload);
         message.setCorrelationId(payload.getCorrelationId());
         messageSender.send(message);
-        return Map.of("ReserveStock_correlation_id", message.getCorrelationId());
+        return Map.of("correlationId", message.getCorrelationId());
     }
 }

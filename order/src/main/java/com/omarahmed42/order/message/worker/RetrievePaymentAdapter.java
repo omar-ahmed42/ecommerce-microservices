@@ -21,16 +21,17 @@ public class RetrievePaymentAdapter {
 
     private final MessageSender messageSender;
 
-    @JobWorker(autoComplete = true, type = "retrieve-payment")
+    @JobWorker(autoComplete = true, type = "retrieve-payment", maxJobsActive = 15)
     public Map<String, String> handle(ActivatedJob job) throws JsonProcessingException {
         Map<String, Object> variablesAsMap = job.getVariablesAsMap();
         log.info("RetrievePaymentAdapter variablesAsMap {}", variablesAsMap.toString());
         RetrievePaymentPayload payload = RetrievePaymentPayload.fromMap(variablesAsMap);
         log.debug("Payload converted successfully");
 
+
         Message<RetrievePaymentPayload> message = new Message<>("RetrievePaymentEvent", payload);
         message.setCorrelationId(payload.getCorrelationId());
         messageSender.send(message);
-        return Map.of("RetrievePayment_correlation_id", message.getCorrelationId());
+        return Map.of("correlationId", message.getCorrelationId());
     }
 }
