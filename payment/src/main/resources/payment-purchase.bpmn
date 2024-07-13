@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1x0fpsh" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.24.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.5.0">
-  <bpmn:process id="charge-card" isExecutable="true">
+  <bpmn:process id="charge-card-process" name="Charge Card Proces" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="Payment retrieved">
       <bpmn:outgoing>Flow_1ssj726</bpmn:outgoing>
     </bpmn:startEvent>
@@ -10,19 +10,30 @@
         <zeebe:taskDefinition type="charge-card" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1ssj726</bpmn:incoming>
-      <bpmn:outgoing>Flow_0c293mt</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0gs120j</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_0c293mt" sourceRef="Activity_1yzgreo" targetRef="Event_1shzwpc" />
-    <bpmn:endEvent id="Event_1shzwpc" name="Card Charged">
+    <bpmn:endEvent id="EndEvent_0769is9" name="Payment received">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="card-charged" />
+        <zeebe:taskDefinition type="paymentReceived" />
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_0c293mt</bpmn:incoming>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_1dj2t0a" />
+      <bpmn:incoming>Flow_0mvvr1v</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1p5qns7" />
     </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0gs120j" sourceRef="Activity_1yzgreo" targetRef="CardChargedEvent" />
+    <bpmn:sequenceFlow id="Flow_0mvvr1v" sourceRef="CardChargedEvent" targetRef="EndEvent_0769is9" />
+    <bpmn:intermediateCatchEvent id="CardChargedEvent" name="Card Charged">
+      <bpmn:incoming>Flow_0gs120j</bpmn:incoming>
+      <bpmn:outgoing>Flow_0mvvr1v</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0k2mdgh" messageRef="Message_0c27mgp" />
+    </bpmn:intermediateCatchEvent>
   </bpmn:process>
+  <bpmn:message id="Message_0c27mgp" name="CardChargedEvent">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=correlationId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="charge-card">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="charge-card-process">
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
         <dc:Bounds x="179" y="99" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -33,19 +44,29 @@
         <dc:Bounds x="270" y="77" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0xocpop_di" bpmnElement="Event_1shzwpc">
-        <dc:Bounds x="432" y="99" width="36" height="36" />
+      <bpmndi:BPMNShape id="BPMNShape_1da4vf6" bpmnElement="EndEvent_0769is9">
+        <dc:Bounds x="552" y="99" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="415" y="142" width="70" height="14" />
+          <dc:Bounds x="526" y="142" width="89" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1g83rn4_di" bpmnElement="CardChargedEvent">
+        <dc:Bounds x="442" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="426" y="142" width="70" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_1ssj726_di" bpmnElement="Flow_1ssj726">
         <di:waypoint x="215" y="117" />
         <di:waypoint x="270" y="117" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0c293mt_di" bpmnElement="Flow_0c293mt">
+      <bpmndi:BPMNEdge id="Flow_0gs120j_di" bpmnElement="Flow_0gs120j">
         <di:waypoint x="370" y="117" />
-        <di:waypoint x="432" y="117" />
+        <di:waypoint x="442" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0mvvr1v_di" bpmnElement="Flow_0mvvr1v">
+        <di:waypoint x="478" y="117" />
+        <di:waypoint x="552" y="117" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
