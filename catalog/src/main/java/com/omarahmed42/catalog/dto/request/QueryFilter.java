@@ -9,5 +9,5 @@ public class QueryFilter {
     private Integer page = 1;
     private Integer size = 15;
     private String search;
-    private SortOrder order = SortOrder.DESC;
+    private SortOrder sortOrder = SortOrder.DESC;
 }

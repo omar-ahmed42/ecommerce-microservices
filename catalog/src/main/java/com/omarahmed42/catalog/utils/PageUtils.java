@@ -24,12 +24,12 @@ public class PageUtils {
     }
 
     public static PageRequest getPages(QueryFilter queryFilter) {
-        if (queryFilter.getOrder() == null) {
+        if (queryFilter.getSortOrder() == null) {
             return PageRequest.of(queryFilter.getPage() - 1, queryFilter.getSize());
         }
 
         return PageRequest.of(queryFilter.getPage() - 1, queryFilter.getSize(),
                 Sort.by(
-                        Direction.valueOf(queryFilter.getOrder().toString()), Category_.ID));
+                        Direction.valueOf(queryFilter.getSortOrder().toString()), Category_.ID));
     }
 }
