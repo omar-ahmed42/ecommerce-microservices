@@ -2,11 +2,15 @@ package com.omarahmed42.payment.service.impl;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.omarahmed42.payment.dto.message.Message;
 import com.omarahmed42.payment.dto.request.PaymentCardRequest;
@@ -16,6 +20,7 @@ import com.omarahmed42.payment.dto.response.SetupIntentResponse;
 import com.omarahmed42.payment.enums.PaymentGatewayType;
 import com.omarahmed42.payment.exception.PaymentNotFoundException;
 import com.omarahmed42.payment.exception.PaymentOrderNotFoundException;
+import com.omarahmed42.payment.exception.UnauthorizedAccessException;
 import com.omarahmed42.payment.mapper.PaymentMapper;
 import com.omarahmed42.payment.message.payload.CardChargedPayload;
 import com.omarahmed42.payment.message.payload.PaymentFailedPayload;
@@ -58,6 +63,10 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentMapper paymentMapper;
     private final MessageSender messageSender;
     private final PaymentGatewayCustomerService paymentGatewayCustomerService;
+    private final TransactionTemplate transactionTemplate;
+
+    private static final String USER_ID = "userId";
+    private static final String CORRELATION_ID = "correlationId";
 
     @Override
     @Transactional(readOnly = true)
@@ -74,8 +83,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new PaymentNotFoundException("Payment with id " + paymentId + " not found"));
 
         String userId = paymentRequest.getUserId();
-        if (!payment.getUserId().equals(userId))
-            throw new RuntimeException("Unauthorized access");
+        if (userId != null && !Objects.equals(payment.getUserId(), userId))
+            throw new UnauthorizedAccessException("Unauthorized access");
 
         PaymentGatewayCustomer gatewayCustomer = payment.getGatewayCustomer();
         String customerId = gatewayCustomer.getCustomerId();
@@ -89,7 +98,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .setAmount(totalCost.multiply(BigDecimal.valueOf(100)).longValue());
 
         if (correlationId != null)
-            paramsBuilder.putMetadata("correlationId", correlationId);
+            paramsBuilder.putMetadata(CORRELATION_ID, correlationId);
 
         PaymentIntentCreateParams params = paramsBuilder.build();
 
@@ -137,7 +146,7 @@ public class PaymentServiceImpl implements PaymentService {
         paymentOrder.setStatus(paymentIntent.getStatus());
         paymentOrderRepository.save(paymentOrder);
 
-        String correlationId = paymentIntent.getMetadata().get("correlationId");
+        String correlationId = paymentIntent.getMetadata().get(CORRELATION_ID);
 
         CardChargedPayload payload = new CardChargedPayload();
         payload.setPaymentOrderId(paymentOrder.getId().toString());
@@ -178,7 +187,7 @@ public class PaymentServiceImpl implements PaymentService {
             PaymentGatewayCustomer paymentGatewayCustomer = null;
             if (maybeGatewayCustomer.isEmpty()) {
                 Customer customer = Customer.create(
-                        CustomerCreateParams.builder().setName(userId).setMetadata(Map.of("userId", userId)).build());
+                        CustomerCreateParams.builder().setName(userId).setMetadata(Map.of(USER_ID, userId)).build());
 
                 paymentGatewayCustomer = new PaymentGatewayCustomer();
                 paymentGatewayCustomer.setType(PaymentGatewayType.STRIPE);
@@ -231,6 +240,11 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public void handleEvent(String eventType, StripeObject stripeObject) {
         switch (eventType) {
+        case "customer.created" -> {
+            log.info("Customer created with id {} for user id {}", ((Customer) stripeObject).getId(),
+                    ((Customer) stripeObject).getMetadata().get(USER_ID));
+            handleCustomerCreated((Customer) stripeObject);
+        }
         case "payment_method.attached" -> {
             log.info("Payment method with id {} attached for customer with id {}",
                     ((PaymentMethod) stripeObject).getId(), ((PaymentMethod) stripeObject).getCustomer());
@@ -246,6 +260,27 @@ public class PaymentServiceImpl implements PaymentService {
         }
         default -> log.warn("Unhandled event type: {}", eventType);
         }
+    }
+
+    private void handleCustomerCreated(Customer customer) {
+        String userId = customer.getMetadata().get(USER_ID);
+
+        transactionTemplate.execute(new TransactionCallbackWithoutResult() {
+            @Override
+            protected void doInTransactionWithoutResult(TransactionStatus status) {
+                boolean doesStripeCustomerExist = paymentGatewayCustomerRepository.existsByCustomerIdAndType(userId,
+                        PaymentGatewayType.STRIPE);
+
+                if (!doesStripeCustomerExist) {
+                    PaymentGatewayCustomer paymentGatewayCustomer = new PaymentGatewayCustomer();
+                    paymentGatewayCustomer.setType(PaymentGatewayType.STRIPE);
+                    paymentGatewayCustomer.setUserId(userId);
+                    paymentGatewayCustomer.setCustomerId(customer.getId());
+                    paymentGatewayCustomer.setCreatedAt(customer.getCreated());
+                    paymentGatewayCustomerRepository.save(paymentGatewayCustomer);
+                }
+            }
+        });
     }
 
     private void handlePaymentMethodAttached(PaymentMethod paymentMethod) {
