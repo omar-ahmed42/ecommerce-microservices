@@ -5,13 +5,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.omarahmed42.order.dto.request.QueryFilter;
 import com.omarahmed42.order.dto.response.OrderDetails;
+import com.omarahmed42.order.dto.response.PaginationResult;
 import com.omarahmed42.order.enums.OrderStatus;
+import com.omarahmed42.order.exception.ForbiddenOrderAccessException;
 import com.omarahmed42.order.exception.OrderNotFoundException;
 import com.omarahmed42.order.mapper.OrderMapper;
 import com.omarahmed42.order.message.payload.item.PricedItem;
@@ -19,7 +26,10 @@ import com.omarahmed42.order.model.Order;
 import com.omarahmed42.order.model.OrderItem;
 import com.omarahmed42.order.repository.OrderRepository;
 import com.omarahmed42.order.service.OrderService;
+import com.omarahmed42.order.utils.PageUtils;
+import com.omarahmed42.order.utils.SecurityUtils;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -54,6 +64,78 @@ public class OrderServiceImpl implements OrderService {
         orderEntity = orderRepository.save(orderEntity);
         log.info("Order stored successfully");
         return orderMapper.toOrder(orderEntity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderDetails getOrderDetails(@NotNull(message = "Order ID cannot be empty") Long orderId) {
+        log.info("Getting order details for order id {}", orderId);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(getOrderNotFoundExceptionMessage(orderId)));
+
+        String subject = SecurityUtils.getSubject();
+        if (isOwner(order, subject) || SecurityUtils.isAdmin()) {
+            return orderMapper.toOrderDetails(order);
+        }
+
+        logUnauthorizedAccess(subject, orderId);
+
+        // Throw not found instead of forbidden for security purposes
+        throw new OrderNotFoundException(getOrderNotFoundExceptionMessage(orderId));
+    }
+
+    private boolean isOwner(Order order, String subject) {
+        return order.getUserId().equals(subject);
+    }
+
+    private void logUnauthorizedAccess(String subject, @NotNull(message = "Order ID cannot be empty") Long orderId) {
+        if (subject != null)
+            log.info("Unauthorized user with id {} tried to access order with id {}", subject, orderId);
+        else
+            log.info("Unauthorized access to order with id {}", orderId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginationResult<OrderDetails> getOrdersDetails(@NotNull(message = "User ID cannot be empty") String userId,
+            QueryFilter filter) {
+        String authenticatedUser = SecurityUtils.getSubject();
+        if (authenticatedUser == null || (!userId.equals(authenticatedUser) && !SecurityUtils.isAdmin())) {
+            throw new ForbiddenOrderAccessException("Forbidden access to orders for user id " + userId);
+        }
+
+        PageRequest page = PageUtils.getPages(filter);
+
+        if (StringUtils.isNotBlank((filter.getSearch()))) {
+            Optional<Long> orderId = parseIdFrom(filter);
+            Page<Order> ordersPage = orderId.isPresent()
+                    ? orderRepository.findByIdContainingAndUserIdEquals(orderId.get(), userId,
+                            page)
+                    : orderRepository.findByUserId(userId, page);
+            return toOrderDetailsPage(ordersPage);
+        }
+
+        Page<Order> ordersPage = orderRepository.findAll(page);
+        return toOrderDetailsPage(ordersPage);
+    }
+
+    private Optional<Long> parseIdFrom(QueryFilter queryFilter) {
+        Long id = null;
+        try {
+            id = Long.parseLong(queryFilter.getSearch());
+            return Optional.ofNullable(id);
+        } catch (NumberFormatException e) {
+            return Optional.ofNullable(id);
+        }
+    }
+
+    private PaginationResult<OrderDetails> toOrderDetailsPage(Page<Order> ordersPage) {
+        return new PaginationResult<>(orderMapper.toOrderDetailsList(ordersPage.getContent()),
+                ordersPage.getNumberOfElements(),
+                ordersPage.getTotalElements(),
+                ordersPage.getTotalPages(),
+                ordersPage.getNumber());
+
     }
 
     @Override

@@ -35,4 +35,11 @@ public class SecurityUtils {
         return (List<GrantedAuthority>) getJwtAuthenticationToken().getAuthorities();
     }
 
+    public static boolean isAdmin() {
+        return getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(auth -> auth.equals("ROLE_ADMIN"));
+    }
+
 }

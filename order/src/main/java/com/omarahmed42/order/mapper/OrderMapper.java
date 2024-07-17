@@ -1,5 +1,7 @@
 package com.omarahmed42.order.mapper;
 
+import java.util.List;
+
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
@@ -18,4 +20,6 @@ public interface OrderMapper {
 
     @InheritInverseConfiguration
     OrderDetails toOrderDetails(Order order);
+
+    List<OrderDetails> toOrderDetailsList(List<Order> orders);
 }
