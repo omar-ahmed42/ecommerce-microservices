@@ -1,16 +1,19 @@
 package com.omarahmed42.inventory.unit.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -27,6 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.omarahmed42.inventory.inventory.dto.request.InventoryRequest;
+import com.omarahmed42.inventory.inventory.exception.InventoryItemNotFoundException;
 import com.omarahmed42.inventory.inventory.mapper.InventoryMapper;
 import com.omarahmed42.inventory.inventory.model.Inventory;
 import com.omarahmed42.inventory.inventory.repository.InventoryRepository;
@@ -117,4 +121,45 @@ class InventoryServiceImplTest {
         assertEquals("Product ID cannot be empty",
                 ((ConstraintViolation<InventoryServiceImpl>) violations.toArray()[0]).getMessage());
     }
+
+    @Tag("getInventory")
+    @DisplayName("Getting an inventory item")
+    @ParameterizedTest(name = "productId")
+    @ValueSource(longs = { 1L, 2L, 1000L })
+    void getInventory_should_retrieve_the_item_successfully(Long productId) {
+        when(inventoryRepository.findById(anyLong())).thenReturn(Optional.of(new Inventory()));
+
+        inventoryService.getInventory(productId);
+        verify(inventoryRepository).findById(anyLong());
+        verify(inventoryMapper).toInventoryResponse(any(Inventory.class));
+    }
+
+    @Tag("getInventory")
+    @DisplayName("Getting a non-present/non-existing inventory item - should throw InventoryItemNotFoundException")
+    @Test
+    void getInventory_for_non_existing_item_should_throw_InventoryNotFoundException() {
+        Long productId = 1L;
+        when(inventoryRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        assertThrows(InventoryItemNotFoundException.class, () -> inventoryService.getInventory(productId),
+                "Inventory item with id " + productId + " not found");
+        verify(inventoryRepository).findById(anyLong());
+        verifyNoInteractions(inventoryMapper);
+    }
+
+    @Test
+    @Tag("getInventory")
+    @DisplayName("Getting an inventory item with id null should violate constraint")
+    void getInventory_null_id_should_violate_constraints() throws NoSuchMethodException, SecurityException {
+        Method getInventoryMethod = InventoryServiceImpl.class.getMethod("getInventory", Long.class);
+        Object[] parameterValues = { null };
+
+        Set<ConstraintViolation<InventoryServiceImpl>> violations = validator.forExecutables()
+                .validateParameters(inventoryService, getInventoryMethod, parameterValues);
+
+        assertTrue(violations.size() > 0);
+        assertEquals("Product ID cannot be empty",
+                ((ConstraintViolation<InventoryServiceImpl>) violations.toArray()[0]).getMessage());
+    }
+
 }
