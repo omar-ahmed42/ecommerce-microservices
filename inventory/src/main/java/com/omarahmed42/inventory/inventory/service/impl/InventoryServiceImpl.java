@@ -1,5 +1,6 @@
 package com.omarahmed42.inventory.inventory.service.impl;
 
+import java.util.Set;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -119,8 +120,9 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Transactional
     public void reserveInventory(List<InventoryItem> items) throws JsonProcessingException {
-        List<Inventory> inventories = inventoryRepository.findAllByProductIdIn(
-                items.stream().filter(Objects::nonNull).map(InventoryItem::getProductId).collect(Collectors.toSet()));
+        Set<Long> uniqueProductsIds = items.stream().filter(Objects::nonNull).map(InventoryItem::getProductId)
+                .collect(Collectors.toSet());
+        List<Inventory> inventories = inventoryRepository.findAllByProductIdIn(uniqueProductsIds);
 
         Map<Long, Inventory> idToItem = inventories.stream()
                 .collect(Collectors.toMap(Inventory::getProductId, Function.identity()));
@@ -141,6 +143,8 @@ public class InventoryServiceImpl implements InventoryService {
                 } catch (InsufficientStockException e) {
                     reservationErrors.add(new InventoryError(e.getMessage()));
                 }
+            } else {
+                reservationErrors.add(new InventoryError(item.getProductId() + ": " + "Not Found"));
             }
         }
 
