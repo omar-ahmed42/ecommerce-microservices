@@ -56,7 +56,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         setOrderDetails(order, checkoutCart, getAuthenticatedUserId());
         order.addItems(checkoutCart.getItems());
 
-        Message<Order> message = new Message<>("OrderPlacedEvent", order);
+        Message<Order> message = new Message<>("CartCheckoutEvent", order);
         message.getMetadata().put(CHECKOUT_TYPE, CheckoutType.CART_PURCHASE.type());
 
         log.info("Send message from {} with id {} and correlation id {} of type {}", message.getSource(),
