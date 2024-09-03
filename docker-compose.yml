@@ -544,6 +544,83 @@ services:
       retries: 5
       start_period: 160s
 
+  cart:
+    container_name: cart
+    build:
+      context: ./cart
+      dockerfile: ./docker/Dockerfile
+    image: ecommerce_cart:latest
+    ports:
+      - '$APP_HOST_CART_PORT:$APP_CONTAINER_CART_PORT'
+    environment:
+      - PORT=$APP_CONTAINER_CART_PORT
+      - CART_PG_USER
+      - CART_PG_PASSWORD
+      - CONTAINER_CART_PG_PORT
+      - CART_DATABASE
+      - UID_GENERATOR_HOST
+      - UID_GENERATOR_PORT
+      - AUTH_PORT=${AUTH_CONTAINER_PORT}
+      - KEYCLOAK_REALM
+      - KEYCLOAK_ADMIN
+      - KEYCLOAK_ADMIN_PASSWORD
+      - KEYCLOAK_CLIENT_SECRET
+      - KEYCLOAK_CLIENT_ID
+      - KEYCLOAK_PROVIDER
+      - ZEEBE_GATEWAY_PORT=${CONTAINER_ZEEBE_GATEWAY_PORT}
+      - ZEEBE_OPERATE_PORT=${CONTAINER_ZEEBE_OPERATE_PORT}
+      - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
+      - KAFKA_BOOTSTRAP_SERVERS
+    networks:
+      - ecommerce
+      - ecommerce-cart
+      - ecommerce-zeebe
+    restart: on-failure
+    depends_on:
+      auth-server:
+        condition: service_healthy
+      uid-generator:
+        condition: service_started
+      catalog-postgres:
+        condition: service_healthy
+      zeebe:
+        condition: service_healthy
+      ecommerce-kafka:
+        condition: service_healthy
+      
+  cart-postgres:
+    container_name: cart-postgres
+    image: 'postgres:latest'
+    environment:
+      - POSTGRES_DB=${CART_DATABASE}
+      - POSTGRES_USER=${CART_PG_USER}
+      - PGPORT:${CONTAINER_CART_PG_PORT}
+      - PGUSER=${CART_PG_USER}
+      - POSTGRES_PASSWORD=${CART_PG_PASSWORD}
+    ports:
+      - '${HOST_CART_PG_PORT}:${CONTAINER_CART_PG_PORT}'
+    command: ['-p', $CONTAINER_CART_PG_PORT]
+    volumes:
+      - ./pgdata/cart:/var/lib/postgresql/data
+    networks:
+      - ecommerce-cart
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'sh',
+          '-c',
+          'pg_isready',
+          '-U',
+          '$${POSTGRES_USER}',
+          '-d',
+          '$${POSTGRES_DB}',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 160s
+
   zeebe:
     container_name: zeebe
     image: camunda/zeebe:latest
