@@ -738,6 +738,9 @@ networks:
   ecommerce-inventory:
     name: ecommerce-inventory
     driver: bridge
+  ecommerce-cart:
+    name: ecommerce-cart
+    driver: bridge
   ecommerce-zeebe:
     name: ecommerce-zeebe
     driver: bridge
