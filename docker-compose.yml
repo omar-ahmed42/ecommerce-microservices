@@ -54,7 +54,6 @@ services:
         condition: service_healthy
       ecommerce-kafka:
         condition: service_healthy
-      
 
   catalog-postgres:
     container_name: catalog-postgres
@@ -587,7 +586,7 @@ services:
         condition: service_healthy
       ecommerce-kafka:
         condition: service_healthy
-      
+
   cart-postgres:
     container_name: cart-postgres
     image: 'postgres:latest'
@@ -621,6 +620,20 @@ services:
       retries: 5
       start_period: 160s
 
+  service-discovery:
+    container_name: service-discovery
+    build:
+      context: ./service-discovery
+      dockerfile: ./docker/Dockerfile
+    image: ecommerce_service_discovery:latest
+    ports:
+      - '$APP_HOST_SERVICE_DISCOVERY:$APP_CONTAINER_SERVICE_DISCOVERY'
+    environment:
+      - PORT=$APP_CONTAINER_SERVICE_DISCOVERY
+    networks:
+      - ecommerce
+    restart: on-failure
+
   zeebe:
     container_name: zeebe
     image: camunda/zeebe:latest
@@ -650,7 +663,8 @@ services:
       - ecommerce-zeebe
     restart: on-failure
     healthcheck:
-      test: [
+      test:
+        [
           'CMD-SHELL',
           "timeout 10s bash -c ':> /dev/tcp/127.0.0.1/$${CONTAINER_ZEEBE_GATEWAY_PORT}' || exit 1",
         ]
@@ -668,7 +682,7 @@ services:
       - zeebe.client.worker.hazelcast.connection=zeebe:${CONTAINER_ZEEBE_HAZELCAST_PORT}
       - zeebe.client.worker.hazelcast.clusterName=dev
     ports:
-      - "$HOST_MONITOR_PORT:$MONITOR_CONTAINER_PORT"
+      - '$HOST_MONITOR_PORT:$MONITOR_CONTAINER_PORT'
     depends_on:
       - zeebe
     networks:
@@ -678,7 +692,7 @@ services:
     container_name: ecommerce-zookeeper
     image: docker.io/bitnami/zookeeper:3.9
     ports:
-      - "$HOST_ZOOKEEPER_PORT:$ZOOKEEPER_CONTAINER_PORT"
+      - '$HOST_ZOOKEEPER_PORT:$ZOOKEEPER_CONTAINER_PORT'
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
     volumes:
@@ -710,7 +724,7 @@ services:
       - KAFKA_CFG_ZOOKEEPER_CONNECTION_TIMEOUT_MS
       - KAFKA_CFG_GROUP_INITIAL_REBALANCE_DELAY_MS
     volumes:
-    - ${KAFKA_HOST_VOLUME}:/kafka-logs
+      - ${KAFKA_HOST_VOLUME}:/kafka-logs
     healthcheck:
       test: kafka-topics.sh --list --bootstrap-server localhost:${KAFKA_CONTAINER_PORT} || exit 1
       interval: 1s
