@@ -657,6 +657,22 @@ services:
       - ecommerce
     restart: on-failure
 
+  api-gateway:
+    container_name: api-gateway
+    hostname: api-gateway
+    build:
+      context: ./api-gateway
+      dockerfile: ./docker/Dockerfile
+    image: ecommerce_api_gateway:latest
+    ports:
+      - '${APP_HOST_API_GATEWAY_PORT}:${APP_CONTAINER_API_GATEWAY_PORT}'
+    environment:
+      - PORT=$APP_CONTAINER_API_GATEWAY_PORT
+      - SERVICE_DISCOVERY_DEFAULTZONE
+    networks:
+      - ecommerce
+    restart: on-failure
+
   zeebe:
     container_name: zeebe
     image: camunda/zeebe:8.5.5
