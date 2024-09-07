@@ -38,6 +38,7 @@ services:
       - ZEEBE_OPERATE_PORT=${CONTAINER_ZEEBE_OPERATE_PORT}
       - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
       - KAFKA_BOOTSTRAP_SERVERS
+      - SERVICE_DISCOVERY_DEFAULTZONE
     networks:
       - ecommerce
       - ecommerce-catalog
@@ -54,6 +55,8 @@ services:
         condition: service_healthy
       ecommerce-kafka:
         condition: service_healthy
+      service-discovery:
+        condition: service_started
 
   catalog-postgres:
     container_name: catalog-postgres
@@ -148,6 +151,7 @@ services:
       - ZEEBE_OPERATE_PORT=${CONTAINER_ZEEBE_OPERATE_PORT}
       - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
       - KAFKA_BOOTSTRAP_SERVERS
+      - SERVICE_DISCOVERY_DEFAULTZONE
     networks:
       - ecommerce
       - ecommerce-user
@@ -162,6 +166,8 @@ services:
         condition: service_healthy
       ecommerce-kafka:
         condition: service_healthy
+      service-discovery:
+        condition: service_started
 
   auth-server:
     container_name: keycloak_ecommerce
@@ -262,6 +268,7 @@ services:
       - ZEEBE_OPERATE_PORT=${CONTAINER_ZEEBE_OPERATE_PORT}
       - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
       - KAFKA_BOOTSTRAP_SERVERS
+      - SERVICE_DISCOVERY_DEFAULTZONE
     networks:
       - ecommerce
       - ecommerce-checkout
@@ -276,6 +283,8 @@ services:
         condition: service_healthy
       zeebe:
         condition: service_healthy
+      service-discovery:
+        condition: service_started
 
   checkout-postgres:
     container_name: checkout-postgres
@@ -337,6 +346,7 @@ services:
       - ZEEBE_OPERATE_PORT=${CONTAINER_ZEEBE_OPERATE_PORT}
       - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
       - KAFKA_BOOTSTRAP_SERVERS
+      - SERVICE_DISCOVERY_DEFAULTZONE
     networks:
       - ecommerce
       - ecommerce-order
@@ -353,6 +363,8 @@ services:
         condition: service_healthy
       ecommerce-kafka:
         condition: service_healthy
+      service-discovery:
+        condition: service_started
 
   order-postgres:
     container_name: order-postgres
@@ -369,7 +381,7 @@ services:
     volumes:
       - ./pgdata/order:/var/lib/postgresql/data
     networks:
-      - ecommerce-order
+      - ecommerce
     healthcheck:
       test:
         [
@@ -416,6 +428,7 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS
       - STRIPE_API_KEY
       - STRIPE_TEST_SECRET
+      - SERVICE_DISCOVERY_DEFAULTZONE
     networks:
       - ecommerce
       - ecommerce-payment
@@ -432,6 +445,8 @@ services:
         condition: service_healthy
       ecommerce-kafka:
         condition: service_healthy
+      service-discovery:
+        condition: service_started
 
   payment-postgres:
     container_name: payment-postgres
@@ -493,6 +508,7 @@ services:
       - ZEEBE_OPERATE_PORT=${CONTAINER_ZEEBE_OPERATE_PORT}
       - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
       - KAFKA_BOOTSTRAP_SERVERS
+      - SERVICE_DISCOVERY_DEFAULTZONE
     networks:
       - ecommerce
       - ecommerce-inventory
@@ -509,6 +525,8 @@ services:
         condition: service_healthy
       ecommerce-kafka:
         condition: service_healthy
+      service-discovery:
+        condition: service_started
 
   inventory-postgres:
     container_name: inventory-postgres
@@ -570,6 +588,7 @@ services:
       - ZEEBE_OPERATE_PORT=${CONTAINER_ZEEBE_OPERATE_PORT}
       - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
       - KAFKA_BOOTSTRAP_SERVERS
+      - SERVICE_DISCOVERY_DEFAULTZONE
     networks:
       - ecommerce
       - ecommerce-cart
@@ -586,6 +605,8 @@ services:
         condition: service_healthy
       ecommerce-kafka:
         condition: service_healthy
+      service-discovery:
+        condition: service_started
 
   cart-postgres:
     container_name: cart-postgres
@@ -622,24 +643,26 @@ services:
 
   service-discovery:
     container_name: service-discovery
+    hostname: service-discovery
     build:
       context: ./service-discovery
       dockerfile: ./docker/Dockerfile
     image: ecommerce_service_discovery:latest
     ports:
-      - '$APP_HOST_SERVICE_DISCOVERY:$APP_CONTAINER_SERVICE_DISCOVERY'
+      - '${APP_HOST_SERVICE_DISCOVERY_PORT}:${APP_CONTAINER_SERVICE_DISCOVERY_PORT}'
     environment:
-      - PORT=$APP_CONTAINER_SERVICE_DISCOVERY
+      - PORT=$APP_CONTAINER_SERVICE_DISCOVERY_PORT
+      - SERVICE_DISCOVERY_DEFAULTZONE
     networks:
       - ecommerce
     restart: on-failure
 
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:latest
+    image: camunda/zeebe:8.5.5
     hostname: zeebe
     environment:
-      - ZEEBE_LOG_LEVEL=trace
+      - ZEEBE_LOG_LEVEL=debug
       - ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS=4
       - ZEEBE_GATEWAY_CLUSTER_REQUESTTIMEOUT=30s
       - ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE=80MB
