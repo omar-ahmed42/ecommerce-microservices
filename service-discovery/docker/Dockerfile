@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:experimental
-FROM eclipse-temurin:21-jdk AS build
+FROM eclipse-temurin:17-jdk AS build
 WORKDIR /workspace/app
 
 COPY ../mvnw .
@@ -15,11 +15,11 @@ RUN chmod a+x /workspace/app/target/protoc-plugins
 RUN --mount=type=cache,target=/root/.m2 ./mvnw install -DskipTests
 RUN mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
 
-FROM eclipse-temurin:21-jdk
+FROM eclipse-temurin:17-jdk
 VOLUME /tmp
 ARG DEPENDENCY=/workspace/app/target/dependency
 
 COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
 COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
 COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
-ENTRYPOINT ["java","-cp","app:app/lib/*","com.omarahmed42.service_discovery.ServiceDiscoveryApplication"]
+ENTRYPOINT ["java","-cp","app:app/lib/*","com.omarahmed42.servicediscovery.ServiceDiscoveryApplication"]
