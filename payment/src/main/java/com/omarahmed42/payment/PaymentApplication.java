@@ -8,8 +8,9 @@ import com.stripe.Stripe;
 
 import io.camunda.zeebe.spring.client.annotation.Deployment;
 import jakarta.annotation.PostConstruct;
+import net.devh.boot.grpc.client.autoconfigure.GrpcDiscoveryClientAutoConfiguration;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = { GrpcDiscoveryClientAutoConfiguration.class })
 @Deployment(resources = "classpath:payment-purchase.bpmn")
 public class PaymentApplication {
 
