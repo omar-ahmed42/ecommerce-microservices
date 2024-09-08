@@ -49,12 +49,12 @@ public class CartController {
     }
 
     @GetMapping("/cart/{id}")
-    public ResponseEntity<CartItemResponse> getCategory(@PathVariable("id") Long id) {
+    public ResponseEntity<CartItemResponse> getCart(@PathVariable("id") Long id) {
         return ResponseEntity.ok(cartService.getCartItem(id));
     }
 
     @GetMapping("/cart")
-    public ResponseEntity<PaginationResult<CartItemResponse>> getCategories(
+    public ResponseEntity<PaginationResult<CartItemResponse>> getCartItems(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "15") Integer size, @RequestParam(defaultValue = "ASC") SortOrder sortOrder) {
         return ResponseEntity.ok(cartService.getCartItems(new PaginationRequest(page, size, sortOrder)));
