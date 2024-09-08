@@ -39,6 +39,7 @@ services:
       - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
       - KAFKA_BOOTSTRAP_SERVERS
       - SERVICE_DISCOVERY_DEFAULTZONE
+      - ECOMMERCE_NETWORK_PATTERN
     networks:
       - ecommerce
       - ecommerce-catalog
@@ -152,6 +153,7 @@ services:
       - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
       - KAFKA_BOOTSTRAP_SERVERS
       - SERVICE_DISCOVERY_DEFAULTZONE
+      - ECOMMERCE_NETWORK_PATTERN
     networks:
       - ecommerce
       - ecommerce-user
@@ -269,6 +271,7 @@ services:
       - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
       - KAFKA_BOOTSTRAP_SERVERS
       - SERVICE_DISCOVERY_DEFAULTZONE
+      - ECOMMERCE_NETWORK_PATTERN
     networks:
       - ecommerce
       - ecommerce-checkout
@@ -347,6 +350,7 @@ services:
       - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
       - KAFKA_BOOTSTRAP_SERVERS
       - SERVICE_DISCOVERY_DEFAULTZONE
+      - ECOMMERCE_NETWORK_PATTERN
     networks:
       - ecommerce
       - ecommerce-order
@@ -429,6 +433,7 @@ services:
       - STRIPE_API_KEY
       - STRIPE_TEST_SECRET
       - SERVICE_DISCOVERY_DEFAULTZONE
+      - ECOMMERCE_NETWORK_PATTERN
     networks:
       - ecommerce
       - ecommerce-payment
@@ -509,6 +514,7 @@ services:
       - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
       - KAFKA_BOOTSTRAP_SERVERS
       - SERVICE_DISCOVERY_DEFAULTZONE
+      - ECOMMERCE_NETWORK_PATTERN
     networks:
       - ecommerce
       - ecommerce-inventory
@@ -589,6 +595,7 @@ services:
       - ZEEBE_TASKLIST_PORT=${CONTAINER_ZEEBE_TASKLIST_PORT}
       - KAFKA_BOOTSTRAP_SERVERS
       - SERVICE_DISCOVERY_DEFAULTZONE
+      - ECOMMERCE_NETWORK_PATTERN
     networks:
       - ecommerce
       - ecommerce-cart
@@ -669,6 +676,7 @@ services:
     environment:
       - PORT=$APP_CONTAINER_API_GATEWAY_PORT
       - SERVICE_DISCOVERY_DEFAULTZONE
+      - ECOMMERCE_NETWORK_PATTERN
     networks:
       - ecommerce
     restart: on-failure
@@ -806,3 +814,6 @@ networks:
   ecommerce:
     name: ecommerce
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/24
