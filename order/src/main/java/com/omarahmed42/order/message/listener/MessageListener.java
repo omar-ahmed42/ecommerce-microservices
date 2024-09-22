@@ -76,7 +76,7 @@ public class MessageListener {
                                 message.getType());
                 Order order = message.getPayload();
 
-                Order storedOrder = orderService.placeOrder(order);
+                Order storedOrder = orderService.placeOrder(order, message.getCorrelationId());
                 log.info("Order placed for correlation id {}", message.getCorrelationId());
 
                 ReserveStockPayload payload = new ReserveStockPayload();

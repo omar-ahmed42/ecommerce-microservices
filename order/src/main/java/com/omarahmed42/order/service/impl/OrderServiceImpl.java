@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.omarahmed42.order.dto.request.QueryFilter;
 import com.omarahmed42.order.dto.response.OrderDetails;
 import com.omarahmed42.order.dto.response.PaginationResult;
+import com.omarahmed42.order.dto.response.TracedOrder;
 import com.omarahmed42.order.enums.OrderStatus;
 import com.omarahmed42.order.exception.ForbiddenOrderAccessException;
 import com.omarahmed42.order.exception.OrderNotFoundException;
@@ -44,7 +46,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public com.omarahmed42.order.dto.message.domain.Order placeOrder(
-            com.omarahmed42.order.dto.message.domain.Order order) {
+            com.omarahmed42.order.dto.message.domain.Order order, String correlationId) {
         log.info("Placing order");
         Order orderEntity = new Order();
         orderEntity.setBillingAddressId(order.getBillingAddressId());
@@ -52,6 +54,7 @@ public class OrderServiceImpl implements OrderService {
         orderEntity.setStatus(OrderStatus.PENDING);
         orderEntity.setUserId(order.getUserId());
         orderEntity.setPaymentId(order.getPaymentId());
+        orderEntity.setCorrelationId(UUID.fromString(correlationId));
 
         List<OrderItem> orderItems = order.getOrderItems().stream().filter(Objects::nonNull).map(item -> {
             OrderItem orderItem = new OrderItem();
@@ -189,4 +192,12 @@ public class OrderServiceImpl implements OrderService {
         return orderMapper.toOrderDetails(order);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public TracedOrder getTracedOrder(UUID correlationId) {
+        log.info("Retrieving traced order");
+        Order order = orderRepository.findByCorrelationId(correlationId).orElseThrow(OrderNotFoundException::new);
+        // TODO: Add authorization and prevent IDOR from happening
+        return orderMapper.toTracedOrder(order);
+    }
 }

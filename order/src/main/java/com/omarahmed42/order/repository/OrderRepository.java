@@ -1,9 +1,11 @@
 package com.omarahmed42.order.repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,4 +23,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Page<Order> findByIdContainingAndUserIdEquals(Long id, String userId, PageRequest page);
 
     Page<Order> findByUserId(@NotNull(message = "User ID cannot be empty") String userId, PageRequest page);
+
+    @EntityGraph(attributePaths = {"orderItems"})
+    Optional<Order> findByCorrelationId(@NotNull(message = "Correlation ID cannot be empty") UUID correlationId);
 }

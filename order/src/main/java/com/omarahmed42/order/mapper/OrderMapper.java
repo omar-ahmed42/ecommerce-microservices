@@ -7,6 +7,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 
 import com.omarahmed42.order.dto.response.OrderDetails;
+import com.omarahmed42.order.dto.response.TracedOrder;
 import com.omarahmed42.order.model.Order;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
@@ -22,4 +23,6 @@ public interface OrderMapper {
     OrderDetails toOrderDetails(Order order);
 
     List<OrderDetails> toOrderDetailsList(List<Order> orders);
+
+    TracedOrder toTracedOrder(Order order);
 }
