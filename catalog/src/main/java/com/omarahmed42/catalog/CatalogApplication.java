@@ -2,8 +2,10 @@ package com.omarahmed42.catalog;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @SpringBootApplication
+@EnableJpaAuditing
 public class CatalogApplication {
 
 	public static void main(String[] args) {
