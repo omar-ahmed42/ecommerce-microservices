@@ -18,4 +18,6 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
     Page<CartItem> findAllByUserId(String userId, PageRequest page);
 
+    long countByUserId(String userId);
+
 }

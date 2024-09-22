@@ -6,6 +6,7 @@ import com.omarahmed42.cart.dto.request.CartItemCreation;
 import com.omarahmed42.cart.dto.request.CartItemUpdate;
 import com.omarahmed42.cart.dto.request.PaginationRequest;
 import com.omarahmed42.cart.dto.response.CartItemResponse;
+import com.omarahmed42.cart.dto.response.CartItemsCountResponse;
 import com.omarahmed42.cart.dto.response.PaginationResult;
 
 public interface CartService {
@@ -21,5 +22,7 @@ public interface CartService {
     PaginationResult<CartItemResponse> getCartItems(PaginationRequest paginationRequest);
 
     List<CartItemResponse> getCartItemsByUserId(String userId);
+
+    CartItemsCountResponse countCartItems();
 
 }

@@ -17,6 +17,7 @@ import com.omarahmed42.cart.dto.request.CartItemCreation;
 import com.omarahmed42.cart.dto.request.CartItemUpdate;
 import com.omarahmed42.cart.dto.request.PaginationRequest;
 import com.omarahmed42.cart.dto.response.CartItemResponse;
+import com.omarahmed42.cart.dto.response.CartItemsCountResponse;
 import com.omarahmed42.cart.dto.response.PaginationResult;
 import com.omarahmed42.cart.enums.SortOrder;
 import com.omarahmed42.cart.service.CartService;
@@ -43,7 +44,7 @@ public class CartController {
     }
 
     @DeleteMapping("/cart/{id}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCartItem(@PathVariable Long id) {
         cartService.deleteCartItem(id);
         return ResponseEntity.noContent().build();
     }
@@ -58,6 +59,11 @@ public class CartController {
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "15") Integer size, @RequestParam(defaultValue = "ASC") SortOrder sortOrder) {
         return ResponseEntity.ok(cartService.getCartItems(new PaginationRequest(page, size, sortOrder)));
+    }
+
+    @GetMapping("/cart/count")
+    public ResponseEntity<CartItemsCountResponse> getCartItemsCount() {
+        return ResponseEntity.ok(cartService.countCartItems());
     }
 
 }

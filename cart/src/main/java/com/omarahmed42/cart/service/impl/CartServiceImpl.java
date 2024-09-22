@@ -10,6 +10,7 @@ import com.omarahmed42.cart.dto.request.CartItemCreation;
 import com.omarahmed42.cart.dto.request.CartItemUpdate;
 import com.omarahmed42.cart.dto.request.PaginationRequest;
 import com.omarahmed42.cart.dto.response.CartItemResponse;
+import com.omarahmed42.cart.dto.response.CartItemsCountResponse;
 import com.omarahmed42.cart.dto.response.PaginationResult;
 import com.omarahmed42.cart.exception.CartItemNotFoundException;
 import com.omarahmed42.cart.mapper.CartItemMapper;
@@ -81,11 +82,18 @@ public class CartServiceImpl implements CartService {
         String userId = SecurityUtils.getSubject();
         cartItemRepository.deleteByIdAndUserId(id, userId);
     }
-
+    
     @Override
     @Transactional(readOnly = true)
     public List<CartItemResponse> getCartItemsByUserId(String userId) {
         List<CartItem> cartItems = cartItemRepository.findByUserId(userId);
         return cartItemMapper.toCartItemResponses(cartItems);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public CartItemsCountResponse countCartItems() {
+        SecurityUtils.throwIfUnauthenticated();
+        return new CartItemsCountResponse(cartItemRepository.countByUserId(SecurityUtils.getSubject()));
     }
 }
