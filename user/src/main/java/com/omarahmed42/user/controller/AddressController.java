@@ -27,8 +27,6 @@ public class AddressController {
 
     @PostMapping("/addresses")
     public ResponseEntity<AddressResponse> addAddress(@RequestBody @Validated AddressCreation address) {
-        // Long addressId = addressService.addAddress(address);
-        // return ResponseEntity.created(URI.create(addressId.toString())).build();
         AddressResponse res = addressService.addAddress(address);
         Long addressId = res.id();
         return ResponseEntity.created(URI.create(addressId.toString())).body(res);
