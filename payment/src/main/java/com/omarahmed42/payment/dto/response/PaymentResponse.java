@@ -16,4 +16,5 @@ public class PaymentResponse implements Serializable {
     private Integer expYear;
     private PaymentGatewayCustomerResponse gatewayCustomer;
     private String userId;
+    private String brand;
 }
