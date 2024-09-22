@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.omarahmed42.user.dto.request.UserRegistration;
 import com.omarahmed42.user.dto.response.UserResponse;
@@ -35,6 +36,11 @@ public class UserController {
     @GetMapping(value = "/users/{id}")
     public ResponseEntity<UserResponse> getUser(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(userService.getUser(id));
+    }
+
+    @PostMapping(value = "/users/me/avatar")
+    public ResponseEntity<Long> uploadAvatar(MultipartFile avatar) {
+        return ResponseEntity.ok(userService.saveAvatar(avatar));
     }
 
 }

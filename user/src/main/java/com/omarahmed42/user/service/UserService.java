@@ -3,6 +3,7 @@ package com.omarahmed42.user.service;
 import java.util.UUID;
 
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.omarahmed42.user.dto.request.UserRegistration;
 import com.omarahmed42.user.dto.request.UserUpdate;
@@ -19,4 +20,6 @@ public interface UserService {
     void deleteUser(UUID id);
 
     UserResponse getUser(UUID id);
+
+    Long saveAvatar(MultipartFile file);
 }

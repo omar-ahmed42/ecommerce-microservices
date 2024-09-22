@@ -6,7 +6,10 @@ import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,7 +27,7 @@ public class User implements Serializable {
 
     @Column(name = "last_name")
     private String lastName;
-    
+
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
@@ -36,4 +39,8 @@ public class User implements Serializable {
 
     @Column(name = "phone_number")
     private String phoneNumber;
+
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "avatar_id")
+    private Attachment avatar;
 }
