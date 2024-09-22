@@ -7,6 +7,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -24,9 +25,11 @@ public class OAuth2ResourceServerSecurityConfiguration {
 
         http
                 .csrf(CsrfConfigurer<HttpSecurity>::disable)
+                .cors(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(antMatcher(HttpMethod.GET, "/api/**/categories/**")).permitAll()
                         .requestMatchers(antMatcher(HttpMethod.GET, "/api/**/products/**")).permitAll()
+                        .requestMatchers(antMatcher(HttpMethod.GET, "/uploads/**")).permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(configurer -> configurer.jwt(Customizer.withDefaults()));
         return http.build();
