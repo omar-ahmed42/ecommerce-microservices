@@ -1,14 +1,18 @@
 package com.omarahmed42.payment.model;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 import org.hibernate.annotations.GenericGenerator;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.omarahmed42.payment.enums.PaymentGatewayType;
 import com.omarahmed42.payment.generator.SnowflakeUIDGenerator;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
@@ -18,6 +22,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@EntityListeners(AuditingEntityListener.class)
 @Entity
 @Table(name = "payment_gateway_customers")
 @Getter
@@ -39,4 +44,8 @@ public class PaymentGatewayCustomer implements Serializable {
 
     @Column(name = "user_id")
     private String userId;
+
+    @Column(insertable = false, name = "last_modified_at")
+    @LastModifiedDate
+    protected LocalDateTime lastModifiedAt;
 }
