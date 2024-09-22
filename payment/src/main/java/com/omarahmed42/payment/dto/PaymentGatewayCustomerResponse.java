@@ -12,5 +12,5 @@ public class PaymentGatewayCustomerResponse implements Serializable {
     private String customerId;
     private PaymentGatewayType type;
     private Long createdAt;
-    private Long userId;
+    private String userId;
 }
