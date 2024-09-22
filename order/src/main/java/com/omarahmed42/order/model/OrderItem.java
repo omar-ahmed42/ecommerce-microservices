@@ -1,6 +1,5 @@
 package com.omarahmed42.order.model;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 
 import org.hibernate.annotations.GenericGenerator;
@@ -22,7 +21,7 @@ import lombok.Setter;
 @Table(name = "order_items")
 @Getter
 @Setter
-public class OrderItem implements Serializable {
+public class OrderItem extends Auditable {
     @Id
     @GenericGenerator(name = "snowflake_id_generator", type = SnowflakeUIDGenerator.class)
     @GeneratedValue(generator = "snowflake_id_generator")

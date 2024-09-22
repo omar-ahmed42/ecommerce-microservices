@@ -1,10 +1,10 @@
 package com.omarahmed42.order.model;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 import org.hibernate.annotations.GenericGenerator;
 
@@ -28,7 +28,7 @@ import lombok.Setter;
 @Table(name = "orders")
 @Getter
 @Setter
-public class Order implements Serializable {
+public class Order extends Auditable {
     @Id
     @GenericGenerator(name = "snowflake_id_generator", type = SnowflakeUIDGenerator.class)
     @GeneratedValue(generator = "snowflake_id_generator")
@@ -52,6 +52,9 @@ public class Order implements Serializable {
 
     @Column(name = "user_id")
     private String userId;
+
+    @Column(name = "correlation_id")
+    private UUID correlationId;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItem> orderItems = new ArrayList<>();
