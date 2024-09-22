@@ -2,6 +2,8 @@ package com.omarahmed42.catalog.model;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.hibernate.annotations.GenericGenerator;
 
@@ -14,6 +16,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,4 +47,11 @@ public class Product implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private Category category;
+
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "thumbnail_id")
+    private Attachment thumbnail;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    private List<ProductMedia> media = new ArrayList<>();
 }
