@@ -822,3 +822,6 @@ FodyWeavers.xsd
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,intellij,visualstudio,eclipse,java,maven,node,netbeans
 .env
 pgdata/
+uploads/
+*.exe
+*.json
