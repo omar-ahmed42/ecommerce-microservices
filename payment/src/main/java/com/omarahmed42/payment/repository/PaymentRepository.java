@@ -1,5 +1,6 @@
 package com.omarahmed42.payment.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,5 +16,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
     @Query(value = "SELECT p FROM Payment p LEFT JOIN PaymentGatewayCustomer pgc ON p.gatewayCustomer.id = pgc.id WHERE p.id = :payment_id")
     Optional<Payment> findOne(@Param("payment_id") UUID paymentId);
+
+    List<Payment> findAllByUserId(String userId);
 
 }

@@ -77,6 +77,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    @Transactional
     public void chargeCard(PaymentRequest paymentRequest, String correlationId) {
         UUID paymentId = paymentRequest.getPaymentId();
         Payment payment = paymentRepository.findOne(paymentId)
@@ -124,15 +125,15 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public void handlePaymentIntent(String eventType, PaymentIntent paymentIntent) {
         switch (eventType) {
-        case "payment_intent.succeeded" -> {
-            log.info("Payment for {} succeeded.", paymentIntent.getAmount());
-            handlePaymentIntentSucceeded(paymentIntent);
-        }
-        case "payment_intent.payment_failed" -> {
-            log.info("Payment for {} failed.", paymentIntent.getId());
-            handlePaymentIntentFailed(paymentIntent);
-        }
-        default -> log.warn("Unhandled event type: {}", eventType);
+            case "payment_intent.succeeded" -> {
+                log.info("Payment for {} succeeded.", paymentIntent.getAmount());
+                handlePaymentIntentSucceeded(paymentIntent);
+            }
+            case "payment_intent.payment_failed" -> {
+                log.info("Payment for {} failed.", paymentIntent.getId());
+                handlePaymentIntentFailed(paymentIntent);
+            }
+            default -> log.warn("Unhandled event type: {}", eventType);
         }
 
     }
@@ -240,25 +241,25 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public void handleEvent(String eventType, StripeObject stripeObject) {
         switch (eventType) {
-        case "customer.created" -> {
-            log.info("Customer created with id {} for user id {}", ((Customer) stripeObject).getId(),
-                    ((Customer) stripeObject).getMetadata().get(USER_ID));
-            handleCustomerCreated((Customer) stripeObject);
-        }
-        case "payment_method.attached" -> {
-            log.info("Payment method with id {} attached for customer with id {}",
-                    ((PaymentMethod) stripeObject).getId(), ((PaymentMethod) stripeObject).getCustomer());
-            handlePaymentMethodAttached((PaymentMethod) stripeObject);
-        }
-        case "payment_intent.succeeded" -> {
-            log.info("Payment for {} succeeded.", ((PaymentIntent) stripeObject).getAmount());
-            handlePaymentIntentSucceeded((PaymentIntent) stripeObject);
-        }
-        case "payment_intent.payment_failed" -> {
-            log.info("Payment for {} failed.", ((PaymentIntent) stripeObject).getId());
-            handlePaymentIntentFailed((PaymentIntent) stripeObject);
-        }
-        default -> log.warn("Unhandled event type: {}", eventType);
+            case "customer.created" -> {
+                log.info("Customer created with id {} for user id {}", ((Customer) stripeObject).getId(),
+                        ((Customer) stripeObject).getMetadata().get(USER_ID));
+                handleCustomerCreated((Customer) stripeObject);
+            }
+            case "payment_method.attached" -> {
+                log.info("Payment method with id {} attached for customer with id {}",
+                        ((PaymentMethod) stripeObject).getId(), ((PaymentMethod) stripeObject).getCustomer());
+                handlePaymentMethodAttached((PaymentMethod) stripeObject);
+            }
+            case "payment_intent.succeeded" -> {
+                log.info("Payment for {} succeeded.", ((PaymentIntent) stripeObject).getAmount());
+                handlePaymentIntentSucceeded((PaymentIntent) stripeObject);
+            }
+            case "payment_intent.payment_failed" -> {
+                log.info("Payment for {} failed.", ((PaymentIntent) stripeObject).getId());
+                handlePaymentIntentFailed((PaymentIntent) stripeObject);
+            }
+            default -> log.warn("Unhandled event type: {}", eventType);
         }
     }
 
@@ -286,18 +287,27 @@ public class PaymentServiceImpl implements PaymentService {
     private void handlePaymentMethodAttached(PaymentMethod paymentMethod) {
         Card card = paymentMethod.getCard();
         PaymentGatewayCustomer gatewayCustomer = paymentGatewayCustomerService
-                .getByCustomerId(paymentMethod.getCustomer()).orElseThrow();
+        .getByCustomerId(paymentMethod.getCustomer()).orElseThrow();
         String userId = gatewayCustomer.getUserId();
-
+        
         Payment payment = new Payment();
         payment.setCardId(paymentMethod.getId());
         payment.setUserId(userId);
         payment.setGatewayCustomer(gatewayCustomer);
+        payment.setBrand(card.getBrand());
 
         payment.setLast4(paymentMethod.getCard().getLast4());
         payment.setExpYear(card.getExpYear().intValue());
         payment.setExpMonth(card.getExpMonth().shortValue());
         paymentRepository.save(payment);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<PaymentResponse> getPaymentMethods() {
+        SecurityUtils.throwIfNotAuthenticated();
+        String userId = SecurityUtils.getSubject();
+        java.util.List<Payment> payments = paymentRepository.findAllByUserId(userId);
+        return paymentMapper.toPaymentResponseList(payments);
     }
 
 }

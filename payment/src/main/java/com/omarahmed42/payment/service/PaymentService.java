@@ -12,6 +12,7 @@ import com.stripe.model.StripeObject;
 
 public interface PaymentService {
     PaymentResponse getPayment(UUID paymentId);
+    java.util.List<PaymentResponse> getPaymentMethods();
 
     void chargeCard(PaymentRequest paymentRequest, String correlationId);
     void chargeCard(PaymentRequest paymentRequest);

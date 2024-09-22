@@ -12,4 +12,6 @@ public interface PaymentMapper {
 
     @InheritInverseConfiguration
     PaymentResponse toPaymentResponse(Payment payment);
+
+    java.util.List<PaymentResponse> toPaymentResponseList(java.util.List<Payment> payments);
 }

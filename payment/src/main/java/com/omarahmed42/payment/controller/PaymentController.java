@@ -3,6 +3,7 @@ package com.omarahmed42.payment.controller;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.nimbusds.jose.shaded.gson.JsonSyntaxException;
 import com.omarahmed42.payment.dto.request.PaymentCardRequest;
 import com.omarahmed42.payment.dto.response.SetupIntentResponse;
+import com.omarahmed42.payment.dto.response.PaymentResponse;
 import com.omarahmed42.payment.service.PaymentService;
 import com.stripe.Stripe;
 import com.stripe.exception.SignatureVerificationException;
@@ -40,6 +42,11 @@ public class PaymentController {
     public ResponseEntity<Void> addPayment(@RequestBody PaymentCardRequest payment) {
         paymentService.addPayment(payment);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/payments")
+    public ResponseEntity<java.util.List<PaymentResponse>> getPaymentMethods() {
+        return ResponseEntity.ok(paymentService.getPaymentMethods());
     }
 
     @PostMapping("/payments/setup")
