@@ -40,6 +40,8 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS
       - SERVICE_DISCOVERY_DEFAULTZONE
       - ECOMMERCE_NETWORK_PATTERN
+    volumes:
+      - ./uploads/catalog:/uploads
     networks:
       - ecommerce
       - ecommerce-catalog
@@ -154,6 +156,8 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS
       - SERVICE_DISCOVERY_DEFAULTZONE
       - ECOMMERCE_NETWORK_PATTERN
+    volumes:
+      - ./uploads/user:/uploads
     networks:
       - ecommerce
       - ecommerce-user
@@ -272,6 +276,8 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS
       - SERVICE_DISCOVERY_DEFAULTZONE
       - ECOMMERCE_NETWORK_PATTERN
+    volumes:
+      - ./uploads/checkout:/uploads
     networks:
       - ecommerce
       - ecommerce-checkout
@@ -351,6 +357,8 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS
       - SERVICE_DISCOVERY_DEFAULTZONE
       - ECOMMERCE_NETWORK_PATTERN
+    volumes:
+      - ./uploads/order:/uploads
     networks:
       - ecommerce
       - ecommerce-order
@@ -434,6 +442,8 @@ services:
       - STRIPE_TEST_SECRET
       - SERVICE_DISCOVERY_DEFAULTZONE
       - ECOMMERCE_NETWORK_PATTERN
+    volumes:
+      - ./uploads/payment:/uploads
     networks:
       - ecommerce
       - ecommerce-payment
@@ -515,6 +525,8 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS
       - SERVICE_DISCOVERY_DEFAULTZONE
       - ECOMMERCE_NETWORK_PATTERN
+    volumes:
+      - ./uploads/inventory:/uploads
     networks:
       - ecommerce
       - ecommerce-inventory
@@ -596,6 +608,8 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS
       - SERVICE_DISCOVERY_DEFAULTZONE
       - ECOMMERCE_NETWORK_PATTERN
+    volumes:
+      - ./uploads/cart:/uploads
     networks:
       - ecommerce
       - ecommerce-cart
