@@ -3,6 +3,7 @@ package com.omarahmed42.payment;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 import com.stripe.Stripe;
 
@@ -12,6 +13,7 @@ import net.devh.boot.grpc.client.autoconfigure.GrpcDiscoveryClientAutoConfigurat
 
 @SpringBootApplication(exclude = { GrpcDiscoveryClientAutoConfiguration.class })
 @Deployment(resources = "classpath:payment-purchase.bpmn")
+@EnableJpaAuditing
 public class PaymentApplication {
 
 	@Value("${stripe.api.key}")
