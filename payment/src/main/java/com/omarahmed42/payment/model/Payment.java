@@ -1,10 +1,10 @@
 package com.omarahmed42.payment.model;
 
-import java.io.Serializable;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -20,7 +20,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Payment implements Serializable {
+public class Payment extends Auditable {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -37,7 +37,10 @@ public class Payment implements Serializable {
     @Column(name = "exp_year")
     private Integer expYear;
 
-    @ManyToOne
+    @Column(name = "brand")
+    private String brand;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_gateway_customer_id")
     private PaymentGatewayCustomer gatewayCustomer;
 
