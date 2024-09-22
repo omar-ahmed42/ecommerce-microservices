@@ -8,9 +8,9 @@ import com.omarahmed42.user.dto.response.AddressResponse;
 import jakarta.validation.Valid;
 
 public interface AddressService {
-    Long addAddress(@Valid AddressCreation address);
+    AddressResponse addAddress(@Valid AddressCreation address);
 
     AddressResponse getAddress(Long id);
 
-    Object getAddressesByUserId(UUID userId);
+    java.util.List<AddressResponse> getAddressesByUserId(UUID userId);
 }

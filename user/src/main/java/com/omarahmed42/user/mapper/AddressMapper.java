@@ -14,4 +14,6 @@ public interface AddressMapper {
 
     @Mapping(target = "userId", source = "user.id")
     AddressResponse toAddressResponse(Address address);
+
+    java.util.List<AddressResponse> toAddressResponseList(java.util.List<Address> addresses);
 }

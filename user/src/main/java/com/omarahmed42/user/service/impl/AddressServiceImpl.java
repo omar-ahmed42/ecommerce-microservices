@@ -30,7 +30,7 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     @Transactional
-    public Long addAddress(@Valid AddressCreation addressCreation) {
+    public AddressResponse addAddress(@Valid AddressCreation addressCreation) {
         String userId = SecurityUtils.getSubject();
 
         log.info("Address creation info: country {}, city {}, addressLine {}, zipCode {}", addressCreation.country(),
@@ -39,7 +39,7 @@ public class AddressServiceImpl implements AddressService {
         address.setUser(userRepository.getReferenceById(UUID.fromString(userId)));
 
         address = addressRepository.save(address);
-        return address.getId();
+        return addressMapper.toAddressResponse(address);
     }
 
     @Override
@@ -48,16 +48,16 @@ public class AddressServiceImpl implements AddressService {
         Address address = addressRepository.findById(id).orElseThrow();
 
         UUID authenticatedUserId = UUID.fromString(SecurityUtils.getSubject());
-        if (address.getUser() != null && address.getUser().getId().equals(authenticatedUserId)) {
+        if (address.getUser() != null && !address.getUser().getId().equals(authenticatedUserId)) {
             throw new RuntimeException("Unauthorized");
         }
         return addressMapper.toAddressResponse(address);
     }
 
     @Override
-    public Object getAddressesByUserId(UUID userId) {
-        // TODO Auto-generated method stub
-        return null;
+    public java.util.List<AddressResponse> getAddressesByUserId(UUID userId) {
+        java.util.List<Address> addresses = addressRepository.findAllByUser_Id(userId);
+        return addressMapper.toAddressResponseList(addresses);
     }
 
 }

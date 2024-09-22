@@ -7,5 +7,5 @@ import com.omarahmed42.user.model.Address;
 
 @Repository
 public interface AddressRepository extends JpaRepository<Address, Long> {
-
+    java.util.List<Address> findAllByUser_Id(java.util.UUID userId);
 }

@@ -26,9 +26,12 @@ public class AddressController {
     private final AddressService addressService;
 
     @PostMapping("/addresses")
-    public ResponseEntity<Void> addAddress(@RequestBody @Validated AddressCreation address) {
-        Long addressId = addressService.addAddress(address);
-        return ResponseEntity.created(URI.create(addressId.toString())).build();
+    public ResponseEntity<AddressResponse> addAddress(@RequestBody @Validated AddressCreation address) {
+        // Long addressId = addressService.addAddress(address);
+        // return ResponseEntity.created(URI.create(addressId.toString())).build();
+        AddressResponse res = addressService.addAddress(address);
+        Long addressId = res.id();
+        return ResponseEntity.created(URI.create(addressId.toString())).body(res);
     }
 
     @GetMapping("/addresses/{id}")
@@ -37,7 +40,7 @@ public class AddressController {
     }
 
     @GetMapping("/users/{id}/addresses")
-    public ResponseEntity<?> getAddresses(@PathVariable("id") UUID userId) {
+    public ResponseEntity<java.util.List<AddressResponse>> getAddresses(@PathVariable("id") UUID userId) {
         return ResponseEntity.ok(addressService.getAddressesByUserId(userId));
     }
 }
