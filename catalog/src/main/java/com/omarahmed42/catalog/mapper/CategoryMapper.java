@@ -10,6 +10,7 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
 
 import com.omarahmed42.catalog.dto.request.CategoryCreation;
+import com.omarahmed42.catalog.dto.response.CategoryHierarchyResponse;
 import com.omarahmed42.catalog.dto.response.CategoryResponse;
 import com.omarahmed42.catalog.model.Category;
 
@@ -37,5 +38,8 @@ public interface CategoryMapper {
     void toTargetEntity(@MappingTarget Category category, CategoryCreation categoryCreation);
 
     List<CategoryResponse> toCategoryResponses(Collection<Category> categories);
+
+
+    CategoryHierarchyResponse toCategoryHierarchyResponse(Category category);
 
 }
