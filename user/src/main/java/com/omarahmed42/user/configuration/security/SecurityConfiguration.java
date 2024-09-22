@@ -27,9 +27,15 @@ public class SecurityConfiguration {
                 .csrf(CsrfConfigurer<HttpSecurity>::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, "/api/v1/users").anonymous()
+                        .requestMatchers(antMatcher(HttpMethod.GET, "/uploads/**")).permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(configurer -> configurer.jwt(Customizer.withDefaults()));
         return http.build();
+    }
+
+    private org.springframework.security.web.util.matcher.AntPathRequestMatcher antMatcher(HttpMethod method,
+            String pattern) {
+        return org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher(method, pattern);
     }
 
     @Bean
